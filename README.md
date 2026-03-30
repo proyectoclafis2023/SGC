@@ -20,13 +20,13 @@ Sistema integral para la administración de edificios y condominios, con motor f
 
 ### 1. Clonar el repositorio
 ```bash
-git clone -b release/v2.5.4 https://github.com/proyectoclafis2023/SGC-User-App.git
-cd SGC-User-App
+git clone https://github.com/proyectoclafis2023/PSGC.git
+cd PSGC
 ```
 
 ### 2. Configuración del Backend
 ```bash
-cd sgc-backend
+cd backend
 npm install
 # Configura .env con JWT_SECRET, ADMIN_PASSWORD y DEFAULT_USER_PASSWORD
 npx prisma generate
@@ -37,7 +37,7 @@ npm run dev
 
 ### 3. Configuración del Frontend
 ```bash
-cd ../user-crud-app
+cd ../frontend
 npm install
 npm run dev
 ```
@@ -50,7 +50,7 @@ El sistema incluye una carpeta `/scripts/testing` con herramientas de validació
 Simula el comportamiento de diferentes roles (Admin, Residente, Conserje, Propietario) para verificar la seguridad del backend.
 
 - **Ubicación**: `/scripts/testing/rbac-test-runner.js`
-- **Ejecución**: `npm run test:rbac` (desde `sgc-backend`)
+- **Ejecución**: `npm run test:rbac` (desde `backend`)
 - **Logs**: Resultados detallados en `/logs/rbac-test.log`
 
 Este script valida:
@@ -59,7 +59,7 @@ Este script valida:
 - Bloqueo de accesos no autorizados (403 Forbidden).
 - Control de tasa de peticiones (Rate Limiting).
 
-### 2. SGC Doctor (Auditor de Consistencia)
+### 2. PSGC Doctor (Auditor de Consistencia)
 Herramienta de diagnóstico que valida la alineación canónica entre el Frontend, Backend y la Base de Datos.
 
 - **Ubicación**: `/scripts/sgc-doctor.js`
@@ -99,7 +99,7 @@ Este proyecto está optimizado para trabajar con **Antigravity** (Codificación 
 ### 🥇 Paso 1: Configurar ChatGPT como "Prompt Engineer"
 Copia y pega el siguiente prompt en una nueva sesión de ChatGPT para darle contexto total del proyecto:
 
-> **Rol:** Actúa como experto en Prompt Engineering para el sistema **SGC (v2.5.4)**.
+> **Rol:** Actúa como experto en Prompt Engineering para el sistema **PSGC (Alpha 0.1.0)**.
 > **Misión:** Redactar tareas técnicas y precisas para que **Antigravity** las ejecute sin romper la arquitectura.
 >
 > **Reglas de Oro (Innegociables):**
@@ -111,7 +111,7 @@ Copia y pega el siguiente prompt en una nueva sesión de ChatGPT para darle cont
 > **Fuentes de Verdad:**
 > - `/docs/ai/ai-context.md` (Contexto operativo)
 > - `/docs/architecture/sgc-module-standard.md` (Leyes técnicas)
-> - `/sgc-backend/core/mapping/registry.js` (Estructura de datos)
+> - `/backend/core/mapping/registry.js` (Estructura de datos)
 >
 > **Instrucción:** Cada vez que te pida una tarea, genera un prompt para Antigravity que comience con: *"Basado en el estándar de /docs/architecture/, realiza lo siguiente..."*
 
@@ -124,4 +124,4 @@ Una vez que ChatGPT refine tu idea, dale el prompt resultante a Antigravity. Él
 - [Reglas de Mapeo](/docs/architecture/mapping-and-registry-rules.md)
 
 ## 📄 Licencia
-Este proyecto es de uso privado para el sistema SGC.
+Este proyecto es de uso privado para el sistema PSGC.
