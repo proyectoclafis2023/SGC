@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User CRUD Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div id="root"></div>
+
+    <script>
+        const { useState, useEffect, useMemo } = React;
+
+        function App() {
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
+            const [users, setUsers] = useState([
+                { id: 1, name: 'Admin User', email: 'admin@example.com', role: 'admin', status: 'active', createdAt: new Date().toISOString() },
+                { id: 2, name: 'John Doe', email: 'john@example.com', role: 'user', status: 'active', createdAt: new Date().toISOString() }
+            ]);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [isModalOpen, setIsModalOpen] = useState(false);
+            const [editingUser, setEditingUser] = useState(null);
+
+            if (!isAuthenticated) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">
+                        <div className="w-full max-w-md p-8 glass rounded-3xl shadow-2xl animate-in fade-in zoom-in duration-500">
+                            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+                            <p className="text-gray-600 mb-6">Demo Mode (Use admin/admin)</p>
+                            <form onSubmit={(e) => { e.preventDefault(); setIsAuthenticated(true); }}>
+                                <div className="space-y-4">
+                                    <input type="text" placeholder="Username" defaultValue="admin" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                                    <input type="password" placeholder="Password" defaultValue="admin" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                                    <button type="submit" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-lg">Sign In</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                );
+            }
+
+            const filteredUsers = users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase()));
+
+            return (
+                <div class="min-h-screen flex">
+                    {/* Sidebar */}
+                    <aside class="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col p-6">
+                        <div class="flex items-center space-x-3 mb-8">
+                            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold">U</div>
+                            <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">UserSync</span>
+                        </div>
+                        <nav class="flex-1 space-y-1">
+                            <a href="#" class="flex items-center space-x-3 px-4 py-3 bg-indigo-50 text-indigo-600 rounded-xl font-medium">
+                                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </nav>
+                        <button onClick={() => setIsAuthenticated(false)} class="flex items-center space-x-3 px-4 py-3 text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors mt-auto">
+                            <i data-lucide="log-out" class="w-5 h-5"></i>
+                            <span>Sign Out</span>
+                        </button>
+                    </aside>
+
+                    {/* Main */}
+                    <main class="flex-1 p-8 overflow-auto">
+                        <div class="max-w-6xl mx-auto space-y-6">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h1 class="text-2xl font-bold text-gray-900">User Management</h1>
+                                    <p class="text-gray-500">Connected to MySQL (Demo Mock)</p>
+                                </div>
+                                <button onClick={() => { setEditingUser(null); setIsModalOpen(true); }} class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-indigo-700 transition-colors shadow-lg flex items-center space-x-2">
+                                    <i data-lucide="plus" class="w-4 h-4"></i>
+                                    <span>Add User</span>
+                                </button>
+                            </div>
+
+                            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                                <div class="relative flex-1 max-w-md">
+                                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"></i>
+                                    <input type="text" placeholder="Search users..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} class="w-full pl-10 pr-4 py-2 bg-gray-50 rounded-lg border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                                <table class="w-full text-left">
+                                    <thead class="bg-gray-50/50 border-b border-gray-100">
+                                        <tr>
+                                            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">User</th>
+                                            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Role</th>
+                                            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                            <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        {filteredUsers.map(user => (
+                                            <tr key={user.id} class="hover:bg-gray-50 transition-colors">
+                                                <td class="px-6 py-4">
+                                                    <div class="flex items-center space-x-3">
+                                                        <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold">{user.name[0]}</div>
+                                                        <div>
+                                                            <div class="font-medium text-gray-900">{user.name}</div>
+                                                            <div class="text-sm text-gray-500">{user.email}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <span class={`px-2 py-1 rounded-full text-xs font-medium ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>{user.role}</span>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <span class={`px-2 py-1 rounded-full text-xs font-medium ${user.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{user.status}</span>
+                                                </td>
+                                                <td class="px-6 py-4 text-right">
+                                                    <button onClick={() => { setEditingUser(user); setIsModalOpen(true); }} class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                                    <button onClick={() => setUsers(users.filter(u => u.id !== user.id))} class="p-2 text-red-600 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Modal */}
+                    {isModalOpen && (
+                        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in slide-in-from-bottom-4 duration-300">
+                                <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                                    <h2 class="text-xl font-bold">{editingUser ? 'Edit User' : 'Add New User'}</h2>
+                                    <button onClick={() => setIsModalOpen(false)} class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+                                </div>
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const formData = new FormData(e.target);
+                                    const newUser = {
+                                        id: editingUser ? editingUser.id : users.length + 1,
+                                        name: formData.get('name'),
+                                        email: formData.get('email'),
+                                        role: formData.get('role'),
+                                        status: formData.get('status'),
+                                        createdAt: new Date().toISOString()
+                                    };
+                                    if (editingUser) {
+                                        setUsers(users.map(u => u.id === editingUser.id ? newUser : u));
+                                    } else {
+                                        setUsers([...users, newUser]);
+                                    }
+                                    setIsModalOpen(false);
+                                }} class="p-6 space-y-4">
+                                    <div class="space-y-1">
+                                        <label class="text-sm font-medium text-gray-700">Full Name</label>
+                                        <input name="name" defaultValue={editingUser?.name} required class="w-full px-4 py-2 bg-gray-50 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all outline-none" />
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-sm font-medium text-gray-700">Email Address</label>
+                                        <input name="email" type="email" defaultValue={editingUser?.email} required class="w-full px-4 py-2 bg-gray-50 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all outline-none" />
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="space-y-1">
+                                            <label class="text-sm font-medium text-gray-700">Role</label>
+                                            <select name="role" defaultValue={editingUser?.role || 'user'} class="w-full px-4 py-2 bg-gray-50 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
+                                                <option value="user">User</option>
+                                                <option value="admin">Admin</option>
+                                            </select>
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-sm font-medium text-gray-700">Status</label>
+                                            <select name="status" defaultValue={editingUser?.status || 'active'} class="w-full px-4 py-2 bg-gray-50 border-transparent rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
+                                                <option value="active">Active</option>
+                                                <option value="inactive">Inactive</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-shadow shadow-lg mt-4">
+                                        {editingUser ? 'Save Changes' : 'Create User'}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
+
+        // Initialize icons
+        setTimeout(() => {
+            if (window.lucide) window.lucide.createIcons();
+        }, 100);
+        // Re-initialize icons on re-render
+        setInterval(() => {
+            if (window.lucide) window.lucide.createIcons();
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+﻿name;specialty;monthlyPaymentAmount;hoursOfService;phone;email;escalationContact;escalationPhone;notes;isActive
+Seguridad Total;Seguridad;1500000;24/7;+56999999999;contacto@seguridad.cl;Juanito Perez;+56988888888;Empresa de guardias;true

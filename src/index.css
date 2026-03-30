@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --app-bg: #fdfdfd;
+    --card-bg: #ffffff;
+    --sidebar-bg: #ffffff;
+    --border-color: #f3f4f6;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --accent: #4f46e5;
+  }
+
+  .dark {
+    --app-bg: #030712;
+    --card-bg: #111827;
+    --sidebar-bg: #111827;
+    --border-color: #1f2937;
+    --text-primary: #f9fafb;
+    --text-secondary: #9ca3af;
+    --accent: #818cf8;
+  }
+
+  .modern {
+    --app-bg: #0f172a;
+    /* Deep Slate Blue */
+    --sidebar-bg: #1e1b4b;
+    /* Royal Indigo */
+    --card-bg: #1e293b;
+    /* Indigo Slate */
+    --border-color: #334155;
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --accent: #38bdf8;
+    /* Cyber Blue */
+  }
+
+  .modern .text-gray-900,
+  .modern .text-gray-700 {
+    color: var(--text-primary) !important;
+  }
+
+  .modern .bg-white,
+  .modern .bg-gray-50 {
+    background-color: var(--card-bg) !important;
+  }
+
+  .modern .border-gray-100,
+  .modern .border-gray-200 {
+    border-color: var(--border-color) !important;
+  }
+
+  .modern .text-gray-500,
+  .modern .text-gray-400 {
+    color: var(--text-secondary) !important;
+  }
+
+  body {
+    @apply transition-colors duration-300 antialiased font-sans;
+    background-color: var(--app-bg);
+    color: var(--text-primary);
+  }
+
+  /* Custom scrollbar for premium feel */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-200 dark:bg-gray-800 rounded-full hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors;
+  }
+}
+
+@layer components {
+  .premium-card {
+    @apply bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 rounded-[2.5rem];
+  }
+
+  .modern .premium-card {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  .glass-effect {
+    @apply backdrop-blur-md bg-white/80 dark:bg-gray-900/80 border border-white/20 dark:border-gray-800/50;
+  }
+
+  .modern .glass-effect {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+}

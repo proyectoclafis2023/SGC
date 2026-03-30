@@ -1,0 +1,2 @@
+﻿names;lastNames;dni;phone;email;isHonorary;bankId;accountNumber;baseSalary;vacationDays;healthInsuranceId;hasComplementaryInsurance;complementaryInsuranceType;complementaryInsuranceValue;pensionFundId;hasAPV;apvType;apvValue;address;hasEmergencyContact;emergencyContactName;emergencyContactPhone;medicalInfo;position;status
+Jorge;Valdivia;12.345.678-9;+56912345678;jorge@example.com;false;1;123456789;850000;15;1;false;;;1;false;;;Calle Falsa 123;true;Daniela Aranguiz;+56987654321;Alergias: Penicilina;Conserje;active

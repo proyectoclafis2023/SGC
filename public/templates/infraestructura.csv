@@ -1,0 +1,2 @@
+﻿towerId;number;unitTypeId;propertyRole;m2;waterClientId;electricityClientId;gasClientId;ownerId;residentId
+t1;101;ut1;123-1;55;W-001;E-001;G-001;o1;r1

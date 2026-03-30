@@ -1,0 +1,2 @@
+﻿names;lastNames;dni;phone;email;towerId;unitId;parkingIds;familyCount;hasPets;conditionIds;notes;isTenant;rentAmount;status
+Alexis;Sanchez;15.555.555-5;+56911111111;as7@example.com;t1;d101;p1;1;false;;Vive solo;true;500000;active
