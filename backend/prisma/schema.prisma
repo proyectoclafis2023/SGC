@@ -554,8 +554,8 @@ model Payment {
 /// @module configuracion
 model SystemSettings {
   id                    String   @id @default(cuid())
-  systemName            String   @default("Administración GAG")
-  systemIcon            String   @default("G")
+  systemName            String   @default("SGC - Gestión de Condominios")
+  systemIcon            String   @default("S")
   systemLogo            String?
   systemFavicon         String?
   cameraBackupDays      Int      @default(7)

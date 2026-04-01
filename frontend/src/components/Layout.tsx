@@ -244,12 +244,12 @@ export const Layout: React.FC = () => {
                             </div>
                         )}
                         <span className="text-[14px] font-black text-gray-900 dark:text-white tracking-widest uppercase leading-tight">
-                            PLATAFORMA DE GESTIÓN COMUNITARIA
+                            SGC - SISTEMA DE GESTIÓN DE CONDOMINIOS
                         </span>
                     </div>
                     {isCollapsed && (
                         <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold text-xl shrink-0">
-                            {settings.systemIcon}
+                            S
                         </div>
                     )}
                 </div>
@@ -440,7 +440,7 @@ export const Layout: React.FC = () => {
                         >
                             <Menu className="w-5 h-5" />
                         </button>
-                        <span className={`hidden lg:block font-black text-[10px] uppercase tracking-[0.2em] text-[var(--text-secondary)]`}>Plataforma de Gestion Comunitaria</span>
+                        <span className={`hidden lg:block font-black text-[10px] uppercase tracking-[0.2em] text-[var(--text-secondary)]`}>SGC - Sistema de Gestión de Condominios</span>
                     </div>
 
                     <div className="flex items-center gap-4">

@@ -5,8 +5,8 @@ import { API_BASE_URL } from '../config/api';
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 const DEFAULT_SETTINGS: SystemSettings = {
-    system_name: 'Administración GAG',
-    systemIcon: 'G',
+    system_name: 'SGC - Gestión de Condominios',
+    systemIcon: 'S',
     cameraBackupDays: 7,
     darkMode: false,
     theme: 'light',
