@@ -241,6 +241,14 @@ app.post('/api/mass_upload/dry-run', authorize('mass_upload:execute'), upload.si
     massUploadController.dryRun(req, res);
 });
 
+app.post('/api/mass_upload/execute', authorize('mass_upload:execute'), upload.single('file'), (req, res) => {
+    if (req.file && !req.file.buffer) {
+        req.file.buffer = fs.readFileSync(req.file.path);
+        fs.unlinkSync(req.file.path);
+    }
+    massUploadController.execute(req, res);
+});
+
 // --- Root Route for confirmation ---
 app.get('/', (req, res) => {
     res.send('<h1>🚀 Servidor SGC funcionando correctamente</h1><p>Prueba los endpoints en /api/...</p>');
