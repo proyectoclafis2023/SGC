@@ -1,0 +1,73 @@
+const registry = require('../../core/mapping/registry');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+class MassUploadGlobalValidator {
+  /**
+   * Performs global consistency checks across all sheets and against the database.
+   * @param {Object} allMappedData - Object with sheetName as key and array of mapped rows as value.
+   * @returns {Promise<Array>} - Array of global error objects.
+   */
+  async validateGlobal(allMappedData) {
+    const globalErrors = [];
+    
+    // Create a map of IDs present in the current upload for quick lookup
+    const localIds = {};
+    Object.keys(allMappedData).forEach(module => {
+      localIds[module] = new Set(allMappedData[module].map(row => row.id).filter(Boolean));
+    });
+
+    for (const [module, rows] of Object.entries(allMappedData)) {
+      const config = registry[module];
+      if (!config || !config.relations) continue;
+
+      for (const [rowIndex, row] of rows.entries()) {
+        const displayRowIndex = rowIndex + 2;
+
+        // Check each relation defined in the registry
+        for (const [relName, targetModule] of Object.entries(config.relations)) {
+          // Find the field in the current module that holds the ID for this relation
+          // Convention: if relation is 'resident', the field is 'residentId'
+          const bdField = `${relName}Id`;
+          const fieldConfig = config.fields.find(f => f.bd === bdField);
+          
+          if (!fieldConfig) continue;
+
+          const targetId = row[bdField];
+          if (!targetId) continue; // Optional relations are skipped if empty
+
+          // 1. Check if ID exists in the current upload (multi-sheet consistency)
+          const existsLocally = localIds[targetModule] && localIds[targetModule].has(targetId);
+          if (existsLocally) continue;
+
+          // 2. Check if ID exists in the database (orphan records)
+          const targetConfig = registry[targetModule];
+          if (!targetConfig) continue;
+
+          try {
+            const existsInDb = await prisma[targetConfig.model].findUnique({
+              where: { id: targetId }
+            });
+
+            if (!existsInDb) {
+              globalErrors.push({
+                module,
+                row: displayRowIndex,
+                field: fieldConfig.excel,
+                error: `Referencia inexistente: '${targetId}' no encontrado en '${targetModule}' (Local o DB).`,
+                type: "relation"
+              });
+            }
+          } catch (error) {
+            // If the model or ID is not queryable this way, we log it
+            console.error(`Error checking DB for ${targetModule}:${targetId}`, error);
+          }
+        }
+      }
+    }
+
+    return globalErrors;
+  }
+}
+
+module.exports = new MassUploadGlobalValidator();
