@@ -6,7 +6,8 @@ const registry = require('../../core/mapping/registry');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const MAX_ROWS_LIMIT = 1000;
+// 3. Configurable Limit: Use environment variable or default to 1000
+const MAX_ROWS_LIMIT = parseInt(process.env.MASS_UPLOAD_MAX_ROWS) || 1000;
 
 class MassUploadService {
   /**
@@ -20,10 +21,10 @@ class MassUploadService {
     
     let totalRowsCount = 0;
     
-    // 3. Charge Limit: Ensure the file is not too massive
+    // Charge Limit: Ensure the file is not too massive
     Object.values(rawData).forEach(sheetRows => { totalRowsCount += sheetRows.length; });
     if (totalRowsCount > MAX_ROWS_LIMIT) {
-      throw new Error(`[LIMIT_EXCEEDED] El archivo excede el límite de ${MAX_ROWS_LIMIT} filas permitidas para una carga.`);
+      throw new Error(`[LIMIT_EXCEEDED] El archivo excede el límite de ${MAX_ROWS_LIMIT} filas permitidas.`);
     }
 
     let validRowsTotal = 0;
@@ -41,11 +42,11 @@ class MassUploadService {
         const rowIndex = index + 2;
 
         try {
-          // 1. Mapping mandatory (excel -> camelCase)
+          // Mapping mandatory (excel -> camelCase)
           const mappedRow = mappingEngine.toCamelCase(moduleKey, row, 'excel');
           allMappedData[moduleKey].push(mappedRow);
           
-          // 2. Validate data per row
+          // Validate data per row
           const errors = MassUploadValidator.validateRow(moduleKey, mappedRow, rowIndex);
           
           if (errors.length > 0) {
@@ -82,21 +83,21 @@ class MassUploadService {
       ready_to_execute: readyToExecute,
       errors: rowErrors,
       global_errors: globalErrors,
-      allMappedData: allMappedData 
+      allMappedData: allMappedData,
+      // 4. UI Support: Signal UI that an error report can be shown/downloaded
+      download_error_report: rowErrors.length > 0 || globalErrors.length > 0
     };
   }
 
   /**
-   * Executes transactional persistence with strict mode, limits, and optimized dry-run.
+   * Executes transactional persistence with strict mode and session logging.
    * @param {Buffer} fileBuffer - The Excel file buffer.
    * @param {Object} options - Configuration: { strictMode, skipDryRun, userId }.
-   * @returns {Promise<Object>} - Execution summary with time and processed modules.
    */
   async execute(fileBuffer, options = { strictMode: false, skipDryRun: false, userId: null }) {
     const startTime = Date.now();
     let validationResult = null;
 
-    // 4. Optimize Dry Run: bypass internal check if requested
     if (options.skipDryRun) {
       const data = MassUploadParser.parseExcel(fileBuffer);
       const mappedData = {};
@@ -106,14 +107,15 @@ class MassUploadService {
       validationResult = { 
         ready_to_execute: true, 
         allMappedData: mappedData,
-        summary: { total_rows: Object.values(data).reduce((acc, s) => acc + s.length, 0) } 
+        errors: [],
+        global_errors: []
       };
     } else {
       validationResult = await this.dryRun(fileBuffer);
     }
     
     if (!validationResult.ready_to_execute) {
-      throw new Error(`[EXECUTION_BLOCKED] No se pueden persistir los datos. Se encontraron errores en la validación.`);
+      throw new Error(`[EXECUTION_BLOCKED] No se pueden persistir los datos. Archivo inválido.`);
     }
 
     const allMappedData = validationResult.allMappedData;
@@ -139,17 +141,17 @@ class MassUploadService {
           for (const row of rows) {
             const uniqueField = this.getUniqueKey(moduleKey);
             
-            // 1. STRICT_MODE Check: If active, we fail if any record already exists
+            // STRICT_MODE logic
             if (options.strictMode && uniqueField && row[uniqueField]) {
                 const existing = await tx[config.model].findUnique({
                     where: { [uniqueField]: String(row[uniqueField]) }
                 });
                 if (existing) {
-                    throw new Error(`[STRICT_MODE] El registro '${row[uniqueField]}' ya existe en el módulo '${moduleKey}'.`);
+                    throw new Error(`[STRICT_MODE_VIOLATION] El registro '${row[uniqueField]}' en '${moduleKey}' ya existe en el sistema.`);
                 }
             }
 
-            // Normal Flow (Upsert or Create)
+            // Persistence
             if (moduleKey === 'unidades') {
               await tx.department.upsert({
                 where: { number_towerId: { number: String(row.number), towerId: row.towerId } },
@@ -172,13 +174,12 @@ class MassUploadService {
 
       const executionTimeMs = Date.now() - startTime;
 
-      // 2. EXECUTION LOG: Record the session in the DB
+      // 1. Session Logging: Store detailed result + errors status
       const resultSummary = {
         inserted_rows: insertedTotal,
         modules_processed: modulesProcessed,
         execution_time_ms: executionTimeMs,
-        strict_mode: options.strictMode,
-        skip_dry_run: options.skipDryRun
+        strict_mode: options.strictMode
       };
 
       await prisma.massUploadLog.create({
@@ -186,36 +187,44 @@ class MassUploadService {
           userId: options.userId,
           status: 'success',
           summaryJson: JSON.stringify(resultSummary),
+          errorsJson: JSON.stringify({ row_errors: validationResult.errors, global_errors: validationResult.global_errors }),
           executionTimeMs: executionTimeMs,
           modulesProcessed: modulesProcessed.join(','),
           isDryRun: false
         }
       });
 
-      // 5. Improved Response
       return {
         status: "success",
         inserted_rows: insertedTotal,
         modules_processed: modulesProcessed,
-        execution_time_ms: executionTimeMs
+        execution_time_ms: executionTimeMs,
+        // UI signaling
+        download_error_report: false
       };
 
     } catch (error) {
-      console.error('[MASS_UPLOAD_EXECUTE_ERROR]', error);
+      console.error('[DATABASE_TRANSACTION_ERROR]', error);
       
-      // Log failure for audit
+      const sessionErrors = {
+        main_error: error.message,
+        validation_errors: validationResult ? validationResult.errors : [],
+        global_errors: validationResult ? validationResult.global_errors : []
+      };
+
       await prisma.massUploadLog.create({
         data: {
           userId: options.userId,
           status: 'failed',
           summaryJson: JSON.stringify({ error: error.message }),
+          errorsJson: JSON.stringify(sessionErrors),
           executionTimeMs: Date.now() - startTime,
           modulesProcessed: modulesProcessed.join(','),
           isDryRun: false
         }
-      }).catch(() => {}); // Avoid secondary crash
+      }).catch(() => {});
 
-      throw new Error(`Carga masiva abortada: ${error.message}. Se realizó rollback total.`);
+      throw new Error(`Carga masiva abortada: ${error.message}.`);
     }
   }
 

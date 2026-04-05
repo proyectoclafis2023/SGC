@@ -648,6 +648,7 @@ model MassUploadLog {
   userId           String?
   timestamp        DateTime @default(now())
   summaryJson      String   // Resumen detallado en JSON
+  errorsJson       String?  // Errores detallados de la sesión
   status           String   // success, failed, warning
   executionTimeMs  Int
   modulesProcessed String   // Lista de módulos procesados
