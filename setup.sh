@@ -45,11 +45,19 @@ check_dependencies() {
     log_error "Node.js is not installed. Please install v18+."
     exit 1
   fi
+  
+  # Check Node.js version (min v18)
+  NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+  if [ "$NODE_VERSION" -lt 18 ]; then
+    log_error "Node.js version 18 or higher is required. Current version: $(node -v)"
+    exit 1
+  fi
+  
   if ! command -v npm >/dev/null 2>&1; then
     log_error "npm is not installed."
     exit 1
   fi
-  log_ok "Node.js and npm are present."
+  log_ok "Node.js $(node -v) and npm are present."
 }
 
 validate_ports() {
