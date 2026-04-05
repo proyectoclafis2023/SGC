@@ -350,6 +350,48 @@ function serializePayload(data) {
 
 ---
 
+---
+
+# 11. 📦 MOTOR DE CARGA MASIVA Y OPERACIÓN DEL SISTEMA
+
+Para garantizar la integridad de los datos y la consistencia del sistema, todas las operaciones de carga de datos deben seguir el flujo y las reglas del motor 8.1.0.
+
+## 🔁 Flujo Operativo Estándar
+Cualquier carga de datos masiva debe cumplir este ciclo:
+1. **Descargar Plantilla**: Usar el formato oficial compatible con el módulo.
+2. **Ejecutar DRY RUN**: Validación completa de tipos, relaciones y restricciones sin persistir en BD.
+3. **Corrección**: Depurar la data basada en los logs estructurados devueltos por el motor.
+4. **Carga Real**: Ejecutar la persistencia definitiva tras un Dry Run exitoso.
+
+## 🔗 Dependencias y Orden de Carga
+Para evitar errores de integridad referencial, el orden de carga debe respetar la jerarquía del sistema:
+1. **Infraestructura (7.1.x)**: Torres, pisos, tipos de unidad.
+2. **Maestros Base (7.2.x - 7.3.x)**: Unidades, áreas comunes, servicios básicos.
+3. **Comunidad (5.3.x)**: Residentes, propietarios, personal.
+4. **Operacionales**: Gastos comunes, cobros, multas, eventos.
+
+## 🔁 Integración con el Core de Mapeo
+Para garantizar la consistencia en el flujo de datos, todas las operaciones del motor de carga masiva deben utilizar obligatoriamente la capa de mapeo centralizada:
+* **requestMapper (Entrada)**: Normalización de datos Excel (español) a campos de API (snake_case).
+* **mapResponse (Salida)**: Transformación de objetos de BD (camelCase) a respuestas de API (snake_case).
+
+### 🚫 Prohibiciones Estrictas:
+* **Mapeo Manual**: Prohibido transformar datos o cambiar nombres de campos en los routers o controladores.
+* **Definición Ad-hoc**: Prohibido mapear campos fuera del archivo central `registry.js`.
+
+### 🔗 Flujo Canónico de Datos:
+`Excel → requestMapper → Prisma → mapResponse → UI`
+
+---
+
+## 🚨 Reglas Operativas Críticas
+* **Resolución de Relaciones**: El motor debe resolver IDs automáticamente (ej: buscar `towerId` a partir del nombre de la torre).
+* **Mapeo Centralizado**: Prohibido el uso de adaptadores manuales; todo debe pasar por el Core de Mapeo.
+* **Logs Estructurados**: Toda falla en la carga debe retornar el campo, la fila y el motivo del error.
+* **Persistencia Parcial**: Si una fila falla en carga real, las filas exitosas deben persistirse (si el módulo lo permite) e informar el consolidado.
+
+---
+
 # 🚀 ALCANCE
 
 Este estándar aplica a:

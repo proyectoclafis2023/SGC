@@ -8,16 +8,13 @@ Estás trabajando sobre el sistema SGC.
 
 FUENTES DE VERDAD (OBLIGATORIAS):
 
-1. Listado de módulos:
+1. **AI Core Context**: 
+   /docs/ai/sgc-core-context.md (Fuente de verdad unificada)
+
+2. **Listado de Módulos**:
    /docs/architecture/sgc-modules-full.txt
 
-2. Estándar de desarrollo:
-   /docs/architecture/sgc-module-standard.md
-
-3. Contexto del sistema:
-   /docs/architecture/sgc-context.md
-
-4. Guard de interacción:
+3. **Interaction Guard**:
    /docs/architecture/prompts/00-interaction-guard.md
 
 ---
@@ -160,7 +157,7 @@ MODO: DOCUMENTAR
 Acción:
 
 * Actualizar:
-  /docs/architecture/sgc-context.md
+  /docs/ai/sgc-core-context.md
 
 Reglas:
 

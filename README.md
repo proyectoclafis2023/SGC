@@ -22,31 +22,19 @@ Sistema integral para la administración de edificios y condominios, con motor f
 
 ---
 
-## 📦 Instalación (Modo Manual)
+## 🚀 Inicio Rápido
 
-### 1. Clonar el repositorio
+Para un despliegue automático en menos de 5 minutos, ejecuta:
+
 ```bash
 git clone https://github.com/proyectoclafis2023/SGC.git
 cd SGC
+chmod +x setup.sh
+./setup.sh
 ```
 
-### 2. Configuración del Backend
-```bash
-cd backend
-npm install
-# Configura .env con JWT_SECRET, ADMIN_PASSWORD y DEFAULT_USER_PASSWORD
-npx prisma generate
-npx prisma db push
-npx prisma db seed
-npm run dev
-```
+El script configurará automáticamente las dependencias, generará secretos de seguridad y preparará la base de datos de manera autónoma.
 
-### 3. Configuración del Frontend
-```bash
-cd ../frontend
-npm install
-npm run dev
-```
 
 ---
 
@@ -99,12 +87,13 @@ docker-compose up --build
 
 ## 📚 Documentación Técnica
 
-Para mantener la consistencia del sistema, consulte los manuales en `/docs/architecture`:
+Para mantener la consistencia del sistema, consulte los manuales en `/docs/architecture` y `/docs/ai`:
 
-1. **Estándar de Módulos**: Rules in `sgc-module-standard.md` (Nombres, tipos, Soft Delete).
-2. **Mapping Engine**: Lógica de `registry.js` en `mapping-and-registry-rules.md`.
-3. **Módulo Canónico**: Ejemplo de referencia en `canonical-module-712.md`.
-4. **Automatización**: Guía detallada de pruebas en `automation.md`.
+1. **AI Core Context**: [sgc-core-context.md](/docs/ai/sgc-core-context.md) (Fuente de verdad unificada).
+2. **Estándar de Módulos**: Rules in `sgc-module-standard.md` (Nombres, tipos, Soft Delete).
+3. **Mapping Engine**: Lógica de `registry.js` en `mapping-and-registry-rules.md`.
+4. **Módulo Canónico**: Ejemplo de referencia en `canonical-module-712.md`.
+5. **Automatización**: Guía detallada de pruebas en `automation.md`.
 
 ---
 
@@ -121,15 +110,13 @@ Copia y pega el siguiente prompt en una nueva sesión de ChatGPT para darle cont
 > **Reglas de Oro (Innegociables)**:
 > 1. **Triple Alianza**: API en `snake_case`, DB (Prisma) en `camelCase`, Excel en español.
 > 2. **Mapping**: NO transformaciones manuales en frontend. Todo en `registry.js` con `requestMapper`/`mapResponse`.
-> 3. **Modelos**: Deben incluir `id`, `isArchived`, `createdAt`. Campos complejos terminan en `Json`.
-> 4. **Rutas**: `/api/{modulo_en_plural_snake_case}`.
+> 3. **AI Context**: Siempre referenciar `/docs/ai/sgc-core-context.md` como fuente de verdad.
 >
 > **Fuentes de Verdad**:
-> - `/docs/ai/ai-context.md` (Contexto operativo)
-> - `/docs/architecture/sgc-module-standard.md` (Leyes técnicas)
-> - `/backend/core/mapping/registry.js` (Estructura de datos)
+> - `/docs/ai/sgc-core-context.md` (Contexto operativo unificado)
+> - `/docs/architecture/sgc-modules-full.txt` (Estructura de módulos)
 >
-> **Instrucción**: Cada vez que te pida una tarea, genera un prompt para Antigravity que comience con: *"Basado en el estándar de /docs/architecture/, realiza lo siguiente..."*
+> **Instrucción**: Cada vez que te pida una tarea, genera un prompt para Antigravity que comience con: *"Basado en el estándar de /docs/architecture/ y /docs/ai/sgc-core-context.md, realiza lo siguiente..."*
 
 ### 🥈 Paso 2: Trabajar con Antigravity
 Una vez que ChatGPT refine tu idea, dale el prompt resultante a Antigravity. Él se encargará de leer los archivos, proponer el código y ejecutarlo siguiendo las reglas del sistema.
@@ -137,7 +124,7 @@ Una vez que ChatGPT refine tu idea, dale el prompt resultante a Antigravity. Él
 ---
 
 ## 📚 Documentación Base
-- [Contexto AI](/docs/ai/ai-context.md)
+- [Unificado Core Context](/docs/ai/sgc-core-context.md)
 - [Estándar de Módulos](/docs/architecture/sgc-module-standard.md)
 - [Reglas de Mapeo](/docs/architecture/mapping-and-registry-rules.md)
 
