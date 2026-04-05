@@ -4,6 +4,7 @@ const MassUploadGlobalValidator = require('./massUpload.globalValidator');
 const MassUploadAI = require('./massUpload.ai');
 const registry = require('../../core/mapping/registry');
 const mappingEngine = require('../../core/mapping/engine');
+const { generateDatasetHash } = require('../../utils/hashDataset');
 const { normalizeString } = require('../../utils/stringSimilarity');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
@@ -26,6 +27,7 @@ class MassUploadService {
 
     const rowErrors = [];
     const allMappedData = {};
+    let autoFixedCount = 0;
 
     for (const moduleKey of Object.keys(rawData)) {
       const rows = rawData[moduleKey];
@@ -43,6 +45,7 @@ class MassUploadService {
           if (options.autoFix && mappedRow.email) {
             const fix = await MassUploadAI.attemptAutoFix('email', { value: mappedRow.email });
             if (fix.autoFixed) {
+                autoFixedCount++;
                 const excelField = config.fields.find(f => f.bd === 'email')?.excel || 'email';
                 mappedRow.email = fix.corrected;
                 rowErrors.push({
@@ -83,18 +86,27 @@ class MassUploadService {
     }
 
     const globalErrors = await MassUploadGlobalValidator.validateGlobal(allMappedData, options);
+
+    // AI-Ready Analytics (Optional/Future pre-cursor)
+    const analytics = this.calculateAnalytics([...rowErrors, ...globalErrors]);
+
     const blockingRowErrors = rowErrors.filter(e => !e.autoFixed);
     const blockingGlobalErrors = globalErrors.filter(e => !e.autoFixed);
     
+    const hash = generateDatasetHash(allMappedData);
+
     return {
       summary: {
         total_rows: totalRowsCount,
-        error_rows_count: blockingRowErrors.length + blockingGlobalErrors.length
+        error_rows_count: blockingRowErrors.length + blockingGlobalErrors.length,
+        auto_fixed_count: autoFixedCount,
+        dataset_hash: hash
       },
       ready_to_execute: blockingRowErrors.length === 0 && blockingGlobalErrors.length === 0,
       errors: rowErrors,
       global_errors: globalErrors,
       allMappedData: allMappedData,
+      analytics_summary: analytics,
       download_error_report: rowErrors.length > 0 || globalErrors.length > 0
     };
   }
@@ -103,51 +115,93 @@ class MassUploadService {
    * Executes transactional persistence from an Excel file.
    */
   async execute(fileBuffer, options = { strictMode: false, skipDryRun: false, userId: null, autoFix: false }) {
-    let validationResult = null;
-
-    if (options.skipDryRun) {
-      const data = MassUploadParser.parseExcel(fileBuffer);
-      const mappedData = {};
-      Object.keys(data).forEach(m => {
-          mappedData[m] = data[m].map(r => mappingEngine.toCamelCase(m, r, 'excel'));
-      });
-      validationResult = { ready_to_execute: true, allMappedData: mappedData, errors: [], global_errors: [] };
-    } else {
-      validationResult = await this.dryRun(fileBuffer, options);
-    }
+    let validationResult = await this.dryRun(fileBuffer, options);
     
-    if (!validationResult.ready_to_execute) {
-      throw new Error(`[EXECUTION_BLOCKED] No se pueden persistir los datos. Archivo inválido.`);
+    if (!validationResult.ready_to_execute && !options.skipDryRun) {
+      throw new Error(`[EXECUTION_BLOCKED] Datos inválidos para persistencia.`);
     }
 
-    return await this._persist(validationResult.allMappedData, { ...options, executionFrom: 'file', originalErrors: validationResult.errors });
+    // Deduplication check
+    const existingLog = await prisma.massUploadLog.findFirst({
+        where: { datasetHash: validationResult.summary.dataset_hash, status: 'success' }
+    });
+    if (existingLog && !options.forceDuplicate) {
+        throw new Error(`[DUPLICATE_DATASET] Este dataset ya ha sido cargado exitosamente previamente (Hash: ${validationResult.summary.dataset_hash}).`);
+    }
+
+    return await this._persist(validationResult.allMappedData, { 
+        ...options, 
+        executionFrom: 'file', 
+        originalErrors: validationResult.errors,
+        hash: validationResult.summary.dataset_hash,
+        analytics: validationResult.analytics_summary,
+        autoFixedCount: validationResult.summary.auto_fixed_count
+    });
   }
 
   /**
-   * NEW: Executes transactional persistence from a UI-controlled JSON dataset.
-   * Respects manual edits and auto-fix decisions made in the frontend.
+   * Executes transactional persistence from a UI-controlled JSON dataset.
    */
   async executeData(allMappedData, options = { userId: null, strictMode: false }) {
-      // 1. Structural Sanity Check
-      if (!allMappedData || typeof allMappedData !== 'object') {
-          throw new Error("[SECURITY_VIOLATION] Dataset inválido.");
+      const hash = generateDatasetHash(allMappedData);
+
+      // Deduplication check
+      const existingLog = await prisma.massUploadLog.findFirst({
+          where: { datasetHash: hash, status: 'success' }
+      });
+      if (existingLog && !options.forceDuplicate) {
+          throw new Error(`[DUPLICATE_DATASET] El dataset enviado ya fue persistido (Hash: ${hash}).`);
       }
 
-      // 2. Deep Validation (Last line of defense)
       const globalErrors = await MassUploadGlobalValidator.validateGlobal(allMappedData, { autoFix: false });
       const rowErrors = [];
+      let autoFixedInDataset = 0;
+
       for (const [moduleKey, rows] of Object.entries(allMappedData)) {
           rows.forEach((row, idx) => {
               const errs = MassUploadValidator.validateRow(moduleKey, row, idx + 2);
               if (errs.length > 0) rowErrors.push(...errs);
+              // Counting what was already "autoFixed" if the flag exists
+              if (row.autoFixed) autoFixedInDataset++;
           });
       }
 
       if (rowErrors.length > 0 || globalErrors.length > 0) {
-          throw new Error(`[DATA_INTEGRITY] El dataset contiene errores que impiden la persistencia segura.`);
+          throw new Error(`[DATA_INTEGRITY] El dataset modificado contiene errores.`);
       }
 
-      return await this._persist(allMappedData, { ...options, executionFrom: 'ui_json', originalErrors: [] });
+      const analytics = this.calculateAnalytics([...rowErrors, ...globalErrors]);
+
+      return await this._persist(allMappedData, { 
+          ...options, 
+          executionFrom: 'ui_json', 
+          originalErrors: [], 
+          hash,
+          analytics,
+          autoFixedCount: autoFixedInDataset
+      });
+  }
+
+  /**
+   * Analytics engine for dataset errors (Phase Analytics)
+   */
+  calculateAnalytics(errors) {
+      if (!errors || errors.length === 0) return {};
+      
+      const moduleStats = {};
+      const fieldStats = {};
+
+      errors.forEach(e => {
+          moduleStats[e.module] = (moduleStats[e.module] || 0) + 1;
+          fieldStats[e.field] = (fieldStats[e.field] || 0) + 1;
+      });
+
+      return {
+          total_conflicts: errors.length,
+          by_module: moduleStats,
+          by_field: fieldStats,
+          critical_field: Object.keys(fieldStats).reduce((a, b) => fieldStats[a] > fieldStats[b] ? a : b, '')
+      };
   }
 
   /**
@@ -178,23 +232,19 @@ class MassUploadService {
             const uniqueField = this.getUniqueKey(moduleKey);
             
             if (options.strictMode && uniqueField && row[uniqueField]) {
-                const existing = await tx[config.model].findUnique({
-                    where: { [uniqueField]: String(row[uniqueField]) }
-                });
-                if (existing) throw new Error(`[STRICT] El registro '${row[uniqueField]}' ya existe.`);
+                const existing = await tx[config.model].findUnique({ where: { [uniqueField]: String(row[uniqueField]) } });
+                if (existing) throw new Error(`[STRICT] Registro '${row[uniqueField]}' existe.`);
             }
 
             if (moduleKey === 'unidades') {
               await tx.department.upsert({
                 where: { number_towerId: { number: String(row.number), towerId: row.towerId || row.departmentTowerId } },
-                update: row,
-                create: row
+                update: row, create: row
               });
             } else if (uniqueField && row[uniqueField]) {
               await tx[config.model].upsert({
                 where: { [uniqueField]: String(row[uniqueField]) },
-                update: row,
-                create: row
+                update: row, create: row
               });
             } else {
               await tx[config.model].create({ data: row });
@@ -211,14 +261,20 @@ class MassUploadService {
           userId: options.userId,
           status: 'success',
           summaryJson: JSON.stringify({
-            inserted_rows: insertedTotal,
-            modules_processed: modulesProcessed,
-            execution_time_ms: executionTimeMs,
+            metrics: {
+                total_inserted: insertedTotal,
+                total_auto_fixed: options.autoFixedCount || 0,
+                total_manual_edits: options.executionFrom === 'ui_json' ? 'determined_by_ui' : 0,
+                total_rows: insertedTotal
+            },
+            analytics: options.analytics,
             execution_from: options.executionFrom,
-            strict_mode: options.strictMode
+            execution_time_ms: executionTimeMs
           }),
           errorsJson: JSON.stringify({ original_errors: options.originalErrors }),
-          executionTimeMs: executionTimeMs,
+          executedDataJson: JSON.stringify(allMappedData), // [SNAPSHOT CRÍTICO]
+          datasetHash: options.hash,
+          executionTimeMs,
           modulesProcessed: modulesProcessed.join(','),
           isDryRun: false
         }
@@ -227,9 +283,9 @@ class MassUploadService {
       return {
         status: "success",
         inserted_rows: insertedTotal,
-        modules_processed: modulesProcessed,
-        execution_time_ms: executionTimeMs,
-        executed_from_ui: options.executionFrom === 'ui_json'
+        dataset_hash: options.hash,
+        analytics_summary: options.analytics,
+        execution_time_ms: executionTimeMs
       };
 
     } catch (error) {

@@ -192,6 +192,28 @@ export const MassUploadPage: React.FC = () => {
                Se han persistido {result.inserted_rows} registros en el sistema.
                Sincronización total de módulos: {result.modules_processed?.join(', ')}.
              </p>
+             
+             {result.dataset_hash && (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-10 max-w-lg mx-auto text-left animate-in slide-in-from-bottom duration-1000">
+                    <div className="flex items-center gap-2 mb-3">
+                        <div className="w-2 h-2 rounded-full bg-indigo-300 animate-pulse" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-indigo-100/50">Certificado de Transacción Data-Platform</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <span className="text-[8px] font-mono text-white/40 break-all">HASH SHA-256: {result.dataset_hash}</span>
+                        <div className="flex gap-4 mt-2">
+                             <div className="flex flex-col">
+                                <span className="text-[7px] text-white/30 uppercase font-bold">Analytics</span>
+                                <span className="text-[10px] font-black uppercase">Snapshotted</span>
+                             </div>
+                             <div className="flex flex-col border-l border-white/5 pl-4">
+                                <span className="text-[7px] text-white/30 uppercase font-bold">Estado</span>
+                                <span className="text-[10px] font-black uppercase text-indigo-300">Deduplicado Activo</span>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+             )}
              <div className="flex gap-3 justify-center">
                 <Button variant="secondary" onClick={() => navigate('/mass-upload/history')} className="px-10 py-4 rounded-full font-black uppercase tracking-widest text-[10px] bg-white/20 text-white border-white/10 border hover:bg-white/30">
                     Ver Bitácora de Auditoría

@@ -644,15 +644,17 @@ model BulkUploadLog {
 }
 
 model MassUploadLog {
-  id               String   @id @default(cuid())
-  userId           String?
-  timestamp        DateTime @default(now())
-  summaryJson      String   // Resumen detallado en JSON
-  errorsJson       String?  // Errores detallados de la sesión
-  status           String   // success, failed, warning
-  executionTimeMs  Int
-  modulesProcessed String   // Lista de módulos procesados
-  isDryRun         Boolean  @default(false)
+  id                String   @id @default(cuid())
+  userId            String?
+  timestamp         DateTime @default(now())
+  summaryJson       String   // Resumen detallado (métricas, analytics)
+  errorsJson        String?  // Errores detallados de la sesión
+  executedDataJson  String?  // Snapshot final del dataset ejecutado
+  datasetHash       String?  // Hash SHA-256 para prevenir duplicados
+  status            String   // success, failed, warning
+  executionTimeMs   Int
+  modulesProcessed  String   // Lista de módulos procesados
+  isDryRun          Boolean  @default(false)
 
   @@map("mass_upload_logs")
 }
