@@ -51,6 +51,7 @@ import { FixedAssetProvider } from './context/FixedAssetContext';
 import { ActivoFijoPage } from './pages/ActivoFijoPage';
 import { CargaMasivaPage } from './pages/CargaMasivaPage';
 import { MassUploadPage } from './pages/MassUploadPage';
+import { MassUploadHistoryPage } from './pages/MassUploadHistoryPage';
 import { TicketProvider } from './context/TicketContext';
 import { CameraRequestProvider } from './context/CameraRequestContext';
 import { CorrespondenceProvider } from './context/CorrespondenceContext';
@@ -214,6 +215,7 @@ function App() {
                                                                                             <Route path="activo-fijo" element={<PrivateRoute permission="assets:manage"><ActivoFijoPage /></PrivateRoute>} />
                                                                                             <Route path="carga-masiva" element={<CargaMasivaPage />} />
                                                                                             <Route path="mass-upload" element={<PrivateRoute permission="mass_upload:execute"><MassUploadPage /></PrivateRoute>} />
+                                                                                            <Route path="mass-upload/history" element={<PrivateRoute permission="mass_upload:execute"><MassUploadHistoryPage /></PrivateRoute>} />
                                                                                             <Route path="reclamos" element={<ReclamosPage />} />
                                                                                             <Route path="directiva" element={<DirectivaPage />} />
                                                                                             <Route path="tickets" element={<TicketsPage />} />

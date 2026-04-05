@@ -1,5 +1,7 @@
 import React from 'react';
-import { CheckCircle2, XCircle, AlertCircle, Info, FileText } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, Info, FileText, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { Button } from './Button';
 
 interface RowError {
   module: string;
@@ -40,6 +42,31 @@ export const DryRunResultComponent: React.FC<DryRunResultProps> = ({
   onExecute,
   loading = false
 }) => {
+  const exportErrors = () => {
+    const data = [
+      ...globalErrors.map(e => ({ 
+        Módulo: e.module.toUpperCase(), 
+        Fila: e.row, 
+        Campo: e.field, 
+        Error: e.error, 
+        Tipo: 'Relacional/Global',
+        Sugerencia: 'Verificar integridad referencial o registros duplicados.' 
+      })),
+      ...rowErrors.map(e => ({ 
+        Módulo: e.module.toUpperCase(), 
+        Fila: e.row, 
+        Campo: e.field, 
+        Error: e.error, 
+        Tipo: 'Fila/Estructural',
+        Sugerencia: 'Corregir formato de celda o completar campo requerido.' 
+      }))
+    ];
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Detalle Errores SGC");
+    XLSX.writeFile(wb, `SGC_Errores_Carga_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-500">
       {/* 1. Summary Cards */}
@@ -78,9 +105,18 @@ export const DryRunResultComponent: React.FC<DryRunResultProps> = ({
               <AlertCircle className="w-6 h-6 text-red-500" />
               DETALLE MÉTRICO DE ERRORES
             </h3>
-            <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-black uppercase italic tracking-tighter">
-              {rowErrors.length + globalErrors.length} Conflictos encontrados
-            </span>
+            <div className="flex gap-3">
+              <Button 
+                variant="secondary" 
+                onClick={exportErrors}
+                className="bg-white text-indigo-600 rounded-xl text-[10px] h-10 px-4 font-black shadow-sm"
+              >
+                <Download className="w-3 h-3 mr-2" /> Descargar Excel (.xlsx)
+              </Button>
+              <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-black uppercase italic tracking-tighter flex items-center">
+                {rowErrors.length + globalErrors.length} Conflictos
+              </span>
+            </div>
           </div>
           
           <div className="overflow-x-auto p-4 max-h-[500px] overflow-y-auto custom-scrollbar">

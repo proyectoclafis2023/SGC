@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { UploadFileComponent } from '../components/UploadFileComponent';
 import { DryRunResultComponent } from '../components/DryRunResultComponent';
 import { API_BASE_URL } from '../config/api';
-import { Database, LayoutTemplate, ShieldCheck, Zap } from 'lucide-react';
+import { Database, LayoutTemplate, ShieldCheck, Zap, History, AlertCircle, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Button } from '../components/Button';
+import { useNavigate } from 'react-router-dom';
 
 export const MassUploadPage: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -11,6 +12,8 @@ export const MassUploadPage: React.FC = () => {
   const [executing, setExecuting] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const navigate = useNavigate();
 
   const handleDryRun = async (selectedFile: File) => {
     setFile(selectedFile);
@@ -46,6 +49,7 @@ export const MassUploadPage: React.FC = () => {
   const handleExecute = async () => {
     if (!file) return;
     setExecuting(true);
+    setShowConfirmModal(false);
     setError(null);
 
     const formData = new FormData();
@@ -64,7 +68,7 @@ export const MassUploadPage: React.FC = () => {
 
       const data = await response.json();
       if (response.ok) {
-        setResult({ ...result, executeSuccess: true, inserted_rows: data.inserted_rows });
+        setResult({ ...result, executeSuccess: true, inserted_rows: data.inserted_rows, modules_processed: data.modules_processed });
       } else {
         setError(data.error || 'Error crítico durante la persistencia de datos.');
       }
@@ -79,6 +83,7 @@ export const MassUploadPage: React.FC = () => {
     setFile(null);
     setResult(null);
     setError(null);
+    setShowConfirmModal(false);
   };
 
   return (
@@ -89,18 +94,27 @@ export const MassUploadPage: React.FC = () => {
              <Database className="w-64 h-64" />
          </div>
          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-2">
+                <Button 
+                    variant="secondary" 
+                    onClick={() => navigate('/mass-upload/history')}
+                    className="bg-white/10 text-white rounded-xl text-[9px] h-8 px-4 font-black tracking-widest uppercase hover:bg-white/20 border-white/10"
+                >
+                    <History className="w-3.5 h-3.5 mr-2" /> Historial Bitácora
+                </Button>
+            </div>
             <h1 className="text-4xl font-black italic uppercase tracking-tighter flex items-center gap-3">
                Módulo de Carga Masiva
-               <span className="text-xs bg-white/20 px-2 py-1 rounded-lg not-italic font-black text-white/50 border border-white/10 uppercase tracking-widest">Enterprise</span>
+               <span className="text-xs bg-white/20 px-2 py-1 rounded-lg not-italic font-black text-white/50 border border-white/10 uppercase tracking-widest">v2.7.0</span>
             </h1>
             <p className="text-sm font-medium text-indigo-100 max-w-lg mt-2 uppercase tracking-wide opacity-80">
-               Motor sgc-core-v2.7.0 determinístico con validación global, mapeo centralizado y transaccionalidad total.
+               Motor determinístico con flujo de simulación avanzada y persistencia síncrona.
             </p>
          </div>
          {result && (
             <div className="relative z-10 mt-6 md:mt-0">
                <Button variant="secondary" onClick={reset} className="rounded-full font-black uppercase text-[10px] tracking-widest h-12 px-8 bg-white/10 text-white hover:bg-white/20 border-white/10 border backdrop-blur-md italic">
-                   Restablecer Sesión
+                   Nueva Carga
                </Button>
             </div>
          )}
@@ -112,7 +126,7 @@ export const MassUploadPage: React.FC = () => {
              <LayoutTemplate className="w-3 h-3" /> multi-hoja sincronizado
          </div>
          <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-800 text-indigo-600">
-             <ShieldCheck className="w-3 h-3" /> rbac:mass_upload:execute
+             <ShieldCheck className="w-3 h-3" /> rbac:mass_upload:history
          </div>
          <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-800 text-indigo-600">
              <Zap className="w-3 h-3" /> mapping engine core
@@ -126,15 +140,20 @@ export const MassUploadPage: React.FC = () => {
       <div className="max-w-6xl mx-auto space-y-12">
         {result?.executeSuccess ? (
           <div className="bg-emerald-500 p-20 rounded-[5rem] shadow-2xl shadow-emerald-500/30 text-center text-white animate-in zoom-in-95 duration-500">
-             <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce font-black text-3xl">🎉</div>
+             <CheckCircle2 className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce font-black text-3xl" />
              <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4">¡Carga Masiva Exitosa!</h2>
              <p className="text-lg opacity-80 max-w-lg mx-auto mb-10 leading-relaxed font-bold uppercase tracking-tight">
-               Se han persistido {result.inserted_rows} registros en el sistema sin errores reportados. 
-               La base de datos se ha actualizado correctamente.
+               Se han persistido {result.inserted_rows} registros en el sistema.
+               Sincronización total de módulos: {result.modules_processed?.join(', ')}.
              </p>
-             <Button variant="secondary" onClick={reset} className="px-12 py-5 rounded-full font-black uppercase tracking-widest text-[10px] bg-white text-emerald-600 hover:bg-white/90">
-                 Finalizar y volver
-             </Button>
+             <div className="flex gap-3 justify-center">
+                <Button variant="secondary" onClick={() => navigate('/mass-upload/history')} className="px-10 py-4 rounded-full font-black uppercase tracking-widest text-[10px] bg-white/20 text-white border-white/10 border hover:bg-white/30">
+                    Ver Bitácora de Auditoría
+                </Button>
+                <Button variant="secondary" onClick={reset} className="px-10 py-4 rounded-full font-black uppercase tracking-widest text-[10px] bg-white text-emerald-600 hover:bg-white/90">
+                    Finalizar y volver
+                </Button>
+             </div>
           </div>
         ) : !result ? (
           <div className="max-w-3xl mx-auto">
@@ -159,28 +178,61 @@ export const MassUploadPage: React.FC = () => {
             rowErrors={result.errors || []} 
             globalErrors={result.global_errors || []} 
             readyToExecute={result.ready_to_execute} 
-            onExecute={handleExecute}
+            onExecute={() => setShowConfirmModal(true)}
             loading={executing}
           />
         )}
       </div>
 
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+             <div className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-[3rem] shadow-2xl p-12 border border-gray-100 dark:border-gray-800 text-center animate-in zoom-in-95 duration-500">
+                <div className="w-20 h-20 bg-red-100 text-red-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-xl shadow-red-500/10">
+                   <AlertCircle className="w-10 h-10" />
+                </div>
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white italic uppercase tracking-[max(-0.02em)] mb-4">¿Desea ejecutar la carga real?</h3>
+                <p className="text-xs text-gray-400 font-bold mb-8 uppercase leading-relaxed opacity-80 px-6">
+                   Esta acción realizará cambios masivos en la base de datos que afectarán la integridad de los datos financieros, personales y de infraestructura. 
+                   Se recomienda haber validado previamente el informe de simulación.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                   <Button variant="secondary" onClick={() => setShowConfirmModal(false)} className="rounded-2xl h-14 uppercase text-[10px] font-black tracking-widest bg-gray-50 border-gray-100">Abortar</Button>
+                   <Button onClick={handleExecute} className="rounded-2xl h-14 uppercase text-[10px] font-black tracking-widest bg-indigo-600 text-white shadow-xl shadow-indigo-500/30">Sí, Persistir</Button>
+                </div>
+             </div>
+          </div>
+      )}
+
+      {/* Loading Execute Overlay */}
+      {executing && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-indigo-900/40 backdrop-blur-md animate-in fade-in duration-300">
+              <div className="bg-white dark:bg-gray-900 p-12 rounded-[3.5rem] text-center border border-white/20 shadow-2xl scale-up-center">
+                  <div className="p-5 bg-indigo-50 text-indigo-600 rounded-full inline-block animate-spin mb-6">
+                      <RefreshCw className="w-10 h-10" />
+                  </div>
+                  <h3 className="text-xl font-black uppercase italic italic tracking-tighter">Sincronizando Base de Datos...</h3>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase mt-2 tracking-widest">No cierre esta ventana, se están aplicando transacciones.</p>
+              </div>
+          </div>
+      )}
+
       {/* 4. Footer Guidelines */}
       {!result && !error && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto px-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto px-10 mb-20">
               <div className="bg-gray-50 dark:bg-gray-800 p-8 rounded-[3rem] border border-gray-100 dark:border-gray-800 text-center relative group opacity-60 hover:opacity-100 transition-all">
                   <div className="w-10 h-10 bg-indigo-600 text-white rounded-2xl flex items-center justify-center font-black absolute -top-4 left-1/2 -ml-5 shadow-lg group-hover:scale-110 transition-transform">1</div>
-                  <h4 className="font-black italic uppercase text-indigo-600 text-[10px] tracking-widest mb-2 mt-4">Paso 1: Validación</h4>
+                  <h4 className="font-black italic uppercase text-indigo-600 text-[10px] tracking-widest mb-2 mt-4">Simulación CORE</h4>
                   <p className="text-[10px] font-bold text-gray-500 leading-normal uppercase">El sistema escanea todas las hojas, valida formatos y cruza relaciones.</p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-800 p-8 rounded-[3rem] border border-gray-100 dark:border-gray-800 text-center relative group opacity-60 hover:opacity-100 transition-all">
                   <div className="w-10 h-10 bg-indigo-600 text-white rounded-2xl flex items-center justify-center font-black absolute -top-4 left-1/2 -ml-5 shadow-lg group-hover:scale-110 transition-transform">2</div>
-                  <h4 className="font-black italic uppercase text-indigo-600 text-[10px] tracking-widest mb-2 mt-4">Paso 2: Resolución</h4>
-                  <p className="text-[10px] font-bold text-gray-500 leading-normal uppercase">Detección de duplicados automática (Upsert). Previene fallos en FKs.</p>
+                  <h4 className="font-black italic uppercase text-indigo-600 text-[10px] tracking-widest mb-2 mt-4">Auditoría Previa</h4>
+                  <p className="text-[10px] font-bold text-gray-500 leading-normal uppercase">Detección de duplicados automática (Upsert) y registros huérfanos.</p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-800 p-8 rounded-[3rem] border border-gray-100 dark:border-gray-800 text-center relative group opacity-60 hover:opacity-100 transition-all">
                   <div className="w-10 h-10 bg-indigo-600 text-white rounded-2xl flex items-center justify-center font-black absolute -top-4 left-1/2 -ml-5 shadow-lg group-hover:scale-110 transition-transform">3</div>
-                  <h4 className="font-black italic uppercase text-indigo-600 text-[10px] tracking-widest mb-2 mt-4">Paso 3: Persistencia</h4>
+                  <h4 className="font-black italic uppercase text-indigo-600 text-[10px] tracking-widest mb-2 mt-4">Persistencia 1-Click</h4>
                   <p className="text-[10px] font-bold text-gray-500 leading-normal uppercase">Transacción síncrona: Todo el archivo se inserta o se cancela todo.</p>
               </div>
           </div>

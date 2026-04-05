@@ -249,6 +249,8 @@ app.post('/api/mass_upload/execute', authorize('mass_upload:execute'), upload.si
     massUploadController.execute(req, res);
 });
 
+app.get('/api/mass_upload/history', authorize('mass_upload:execute'), massUploadController.getLogs);
+
 // --- Root Route for confirmation ---
 app.get('/', (req, res) => {
     res.send('<h1>🚀 Servidor SGC funcionando correctamente</h1><p>Prueba los endpoints en /api/...</p>');

@@ -1,4 +1,7 @@
 const MassUploadService = require('./massUpload.service');
+// 1. Prisma is needed here too
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 class MassUploadController {
   /**
@@ -64,6 +67,31 @@ class MassUploadController {
       return res.status(500).json({
         success: false,
         error: error.message || "Error crítico durante la ejecución de la carga masiva."
+      });
+    }
+  }
+
+  /**
+   * Endpoint for fetching mass upload session logs.
+   * @param {Object} req - The Express request object.
+   * @param {Object} res - The Express response object.
+   */
+  async getLogs(req, res) {
+    try {
+      const logs = await prisma.massUploadLog.findMany({
+        orderBy: { timestamp: 'desc' },
+        take: 50
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: logs
+      });
+    } catch (error) {
+      console.error("Error fetching mass upload logs:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Error al recuperar el historial de cargas."
       });
     }
   }
