@@ -70,38 +70,42 @@ export const MassUploadPage: React.FC = () => {
   };
 
   const handleExecute = async () => {
-    // If we have edited data, we must use the virtual blob for execution too!
-    let executionFile: File | Blob | null = file;
-    
-    if (mappedData) {
-        const wb = XLSX.utils.book_new();
-        Object.keys(mappedData).forEach(sheetName => {
-            const ws = XLSX.utils.json_to_sheet(mappedData[sheetName]);
-            XLSX.utils.book_append_sheet(wb, ws, sheetName);
-        });
-        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-        executionFile = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    }
-
-    if (!executionFile) return;
+    if (!mappedData && !file) return;
 
     setExecuting(true);
     setShowConfirmModal(false);
     setError(null);
 
-    const formData = new FormData();
-    formData.append('file', executionFile, 'final_payload.xlsx');
-    formData.append('skip_dry_run', 'true');
-    formData.append('auto_fix', String(autoFix));
-
     try {
-      const response = await fetch(`${API_BASE_URL}/mass_upload/execute`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      });
+      let response;
+      const headers: any = {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      };
+
+      if (mappedData) {
+        // UI-Controlled State-Aware Execution (JSON)
+        response = await fetch(`${API_BASE_URL}/mass_upload/execute`, {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            data: mappedData,
+            auto_fix: String(autoFix)
+          })
+        });
+      } else if (file) {
+        // Classic File Execution
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('auto_fix', String(autoFix));
+        
+        response = await fetch(`${API_BASE_URL}/mass_upload/execute`, {
+          method: 'POST',
+          headers,
+          body: formData
+        });
+      }
+
+      if (!response) throw new Error("Parámetros de ejecución inválidos.");
 
       const data = await response.json();
       if (response.ok) {

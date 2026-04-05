@@ -40,20 +40,12 @@ class MassUploadController {
 
   /**
    * Endpoint for actual execution of mass upload.
-   * Hardened with strict_mode, skip_dry_run, and persistent logging.
+   * State-aware: can receive the original file OR a JSON dataset from the UI.
    * @param {Object} req - The Express request object.
    * @param {Object} res - The Express response object.
    */
   async execute(req, res) {
     try {
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          error: "No se encontró el archivo para la ejecución de carga real."
-        });
-      }
-
-      // Configuration options passed via body (multipart form-data)
       const options = {
         strictMode: req.body.strict_mode === 'true' || req.query.strict_mode === 'true',
         skipDryRun: req.body.skip_dry_run === 'true' || req.query.skip_dry_run === 'true',
@@ -61,17 +53,34 @@ class MassUploadController {
         userId: req.user ? req.user.id : null
       };
 
-      const result = await MassUploadService.execute(req.file.buffer, options);
+      let result;
+
+      // Check if dataset is reaching as JSON payload or multipart data
+      const uiDataset = req.body.dataset || req.body.data;
+
+      if (uiDataset) {
+        // UI-Controlled Execution (Data aware)
+        const allMappedData = typeof uiDataset === 'string' ? JSON.parse(uiDataset) : uiDataset;
+        result = await MassUploadService.executeData(allMappedData, options);
+      } else if (req.file) {
+        // Classic File Execution
+        result = await MassUploadService.execute(req.file.buffer, options);
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: "No se proporcionaron datos ni archivo para la ejecución de carga masiva."
+        });
+      }
 
       return res.status(200).json({
         success: true,
         ...result
       });
     } catch (error) {
-      console.error("Error in mass upload execute:", error);
+      console.error("Error in state-aware execution:", error);
       return res.status(500).json({
         success: false,
-        error: error.message || "Error crítico durante la ejecución de la carga masiva."
+        error: error.message || "Error crítico durante la persistencia de datos orientada a estado."
       });
     }
   }
