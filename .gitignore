@@ -1,3 +1,4 @@
+# SGC - Git Ignore Rules
 node_modules/
 .env
 dist/
@@ -5,14 +6,21 @@ build/
 logs/
 *.log
 
-local_files/
+# Database
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+backend/prisma/prisma/
+
+# System-level
 .DS_Store
 .idea/
 .vscode/
-sgc-backend/prisma/dev.db
-sgc-backend/prisma/dev.db-journal
-sgc-backend/prisma/prisma/
-package-lock.json
-user-crud-app/package-lock.json
-sgc-backend/package-lock.json
 
+# Ignore package-lock to avoid conflicts in this environment
+package-lock.json
+backend/package-lock.json
+frontend/package-lock.json
+
+# Local / Temp files
+local_files/
+*.pid

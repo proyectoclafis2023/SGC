@@ -123,6 +123,18 @@ Una vez que ChatGPT refine tu idea, dale el prompt resultante a Antigravity. Él
 
 ---
 
+## 📦 Changelog
+
+### v2.7.0
+- **Consolidación Estructural**: Creación de `sgc-core-context.md` como fuente de verdad unificada para IA.
+- **Separación de Responsabilidades**: Distinción clara entre el contexto IA (global) y el estándar técnico (detalle).
+- **Core de Mapping**: Refuerzo innegociable del flujo `requestMapper/mapResponse` para CRUD y Carga Masiva.
+- **Setup Determinístico**: Evolución de `setup.sh` (v2.0.0) con reseteo forzado de DB, validación de Node >= 18 y chequeo de puertos.
+- **Seguridad y Robustez**: Implementación de advertencias de plataforma (OS check) y generador de secretos automático.
+- **Arquitectura Canónica**: Consolidación del patrón `Triple Alianza` (Excel ↔ API ↔ BD).
+
+---
+
 ## 📚 Documentación Base
 - [Unificado Core Context](/docs/ai/sgc-core-context.md)
 - [Estándar de Módulos](/docs/architecture/sgc-module-standard.md)
