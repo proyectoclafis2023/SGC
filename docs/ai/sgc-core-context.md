@@ -126,7 +126,28 @@ Para evitar errores de integridad referencial, el orden de configuración/carga 
 
 ---
 
-## 12. WORKFLOW IA (CRÍTICO)
+---
+
+## 12. 📦 FLUJO OBLIGATORIO DE RELEASE
+Todo cambio significativo en el sistema (estructura, arquitectura, setup, módulos o lógica) debe seguir obligatoriamente este flujo para garantizar la consistencia y trazabilidad:
+
+1. **Incrementar Versión**: Actualizar `package.json` siguiendo SemVer.
+2. **Actualizar Changelog**: Registrar los cambios en la sección `## 📦 Changelog` del `README.md`.
+3. **Commit de Release**: Realizar un commit con un mensaje claro que indique la versión.
+4. **Crear Tag**: Generar un tag de versión (ej: `v2.7.0`) con la descripción correspondiente.
+5. **Publicar**: Sincronizar todos los cambios y tags con el repositorio remoto.
+
+### 🔒 Reglas de Versionado
+* **Inmutabilidad**: Los tags son inmutables; no se permite sobrescribir versiones existentes.
+* **Trazabilidad**: Cada cambio estructural debe generar un incremento de versión.
+
+### 🚫 Prohibiciones
+* **Push desordenado**: Prohibido subir cambios estructurales sin el respectivo versionado.
+* **Omitir Documentación**: Prohibido crear versiones sin actualizar el changelog.
+
+---
+
+## 13. WORKFLOW IA (CRÍTICO)
 * **ChatGPT (Prompt Engineer)**: Diseño de tareas técnicas, validación de lógica y generación de prompts precisos.
 * **Antigravity (Coding Assistant)**: Ejecución autónoma de código, modificación del repositorio y validación de arquitectura en tiempo real.
 
