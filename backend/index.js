@@ -13,6 +13,7 @@ const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const bulkMapping = require('./config/bulk-mapping');
 const bulkEngine = require('./core/bulk_engine');
+const massUploadController = require('./modules/mass_upload/massUpload.controller');
 
 const prisma = new PrismaClient();
 const app = express();
@@ -228,6 +229,17 @@ app.get('/api/bulk-masters', authorize('admin:stats'), (req, res) => {
     res.json(bulkEngine.getMasters());
 });
 
+
+// --- 8.x.x Mass Upload Engine (Phase 1) ---
+app.post('/api/mass_upload/dry-run', authorize('admin:stats'), upload.single('file'), (req, res) => {
+    // If we use disk storage, we pass the file path or read it
+    // The controller is currently expecting req.file.buffer, but for disk storage we'll read it
+    if (req.file && !req.file.buffer) {
+        req.file.buffer = fs.readFileSync(req.file.path);
+        fs.unlinkSync(req.file.path); // Cleanup immediately after reading to buffer
+    }
+    massUploadController.dryRun(req, res);
+});
 
 // --- Root Route for confirmation ---
 app.get('/', (req, res) => {
