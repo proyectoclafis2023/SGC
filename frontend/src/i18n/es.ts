@@ -22,7 +22,19 @@ export const es = {
     master_definition_desc: "Verificación de la lista canónica de maestros",
     dataset_health_desc: "Integridad de hashes y deduplicación",
     execution_analytics_desc: "Detección de hotspots y conflictos de datos",
-    system_version_desc: "Integridad de la versión estructural (v3.1.0)",
+    system_version_desc: "Integridad de la versión estructural (v3.2.0)",
+    i18n_health: "Salud de Localización",
+    i18n_health_desc: "Verificación de encoding y estructura del diccionario",
+
+    // Métricas
+    health_score: "Calificación de Salud",
+    checks_performed: "Chequeos Realizados",
+    system_health_status: "Estado de Salud",
+    health_trend: "Tendencia de Salud",
+    performance_history: "Historial de Rendimiento",
+    global_dashboard: "Dashboard Global",
+    top_modules: "Módulos con más Incidencias",
+    no_history: "Sin historial suficiente",
 
     // Severidades e Issues
     severity_info: "INFO",
@@ -56,8 +68,14 @@ export const es = {
 };
 
 /**
- * HELPER DE TRADUCCIÓN (SGC t-engine)
+ * HELPER DE TRADUCCIÓN (SGC t-engine — HARDENED v3.3)
  */
 export const t = (key: string): string => {
-    return (es as any)[key] || key;
+    try {
+        if (!es) return key;
+        return (es as any)[key] || key;
+    } catch (e) {
+        console.error("❌ I18N ERROR [CRITICO]:", e);
+        return key;
+    }
 };

@@ -8,11 +8,27 @@ async function main() {
 
     const rolesList = ['admin', 'resident', 'owner', 'worker'];
     for (const r of rolesList) {
-        await prisma.role.upsert({
+        const role = await prisma.role.upsert({
             where: { name: r },
             update: {},
             create: { name: r, description: `Rol para ${r}` }
         });
+
+        if (r === 'admin') {
+            const perms = ['mass_upload:execute', 'admin:stats', 'reports:view', 'infraestructura:manage'];
+            for (const p of perms) {
+                const perm = await prisma.permission.upsert({
+                    where: { slug: p },
+                    update: {},
+                    create: { slug: p, description: `Permiso para ${p}` }
+                });
+                await prisma.rolePermission.upsert({
+                    where: { roleId_permissionId: { roleId: role.id, permissionId: perm.id } },
+                    update: {},
+                    create: { roleId: role.id, permissionId: perm.id }
+                });
+            }
+        }
     }
 
     const testUsers = [

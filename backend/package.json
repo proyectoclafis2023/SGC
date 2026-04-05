@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "predev": "node scripts/check-i18n.js",
+    "prestart": "node scripts/check-i18n.js",
     "start": "node index.js",
     "dev": "node --watch index.js",
     "sync": "npx prisma db push && npx prisma generate && node scripts/sync-doctor.js",

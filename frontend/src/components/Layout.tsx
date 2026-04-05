@@ -33,8 +33,9 @@ import {
     Wallet,
     Home,
     Mail,
+    Activity,
+    Cpu,
     Shield,
-    UploadCloud,
     BarChart3,
     ClipboardCheck,
     Bell,
@@ -382,15 +383,16 @@ export const Layout: React.FC = () => {
                         />
                     )}
 
-                    {/* SECCIÓN SUPER ADMIN */}
+                    {/* SECCIÓN SUPER ADMIN — v3.3 */}
                     {isAdmin && (
                         <NavItem
-                            icon={ShieldCheck}
+                            icon={Cpu}
                             label="Super Admin"
                             isCollapsed={isCollapsed}
                             children={[
-                                { label: 'Carga Masiva de Datos', path: '/carga-masiva', icon: UploadCloud },
-                                { label: 'Motor de Carga v2 (CORE)', path: '/mass-upload', icon: Database, permission: 'mass_upload:execute' },
+                                { label: 'Salud del Sistema (Doctor)', path: '/system-doctor', icon: Activity, permission: 'mass_upload:execute' },
+                                { label: 'Motor de Carga (Data)', path: '/mass-upload', icon: Package, permission: 'mass_upload:execute' },
+                                { label: 'Historial de Cargas', path: '/mass-upload/history', icon: History, permission: 'mass_upload:execute' },
                             ]}
                         />
                     )}

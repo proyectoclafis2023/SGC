@@ -20,9 +20,11 @@ const MASTER_MODULES = [
   "emergencias"
 ];
 
-const DATA_SCHEMA_VERSION = "3.1.0";
+const DATA_SCHEMA_VERSION = "3.2.0";
+const SGC_VERSION = "3.3.0";
 
 module.exports = {
   MASTER_MODULES,
-  DATA_SCHEMA_VERSION
+  DATA_SCHEMA_VERSION,
+  SGC_VERSION
 };
