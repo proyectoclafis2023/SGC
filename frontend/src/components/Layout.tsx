@@ -390,6 +390,7 @@ export const Layout: React.FC = () => {
                             isCollapsed={isCollapsed}
                             children={[
                                 { label: 'Carga Masiva de Datos', path: '/carga-masiva', icon: UploadCloud },
+                                { label: 'Motor de Carga v2 (CORE)', path: '/mass-upload', icon: Database, permission: 'mass_upload:execute' },
                             ]}
                         />
                     )}
