@@ -659,6 +659,17 @@ model MassUploadLog {
   @@map("mass_upload_logs")
 }
 
+model SystemDoctorLog {
+  id                String   @id @default(cuid())
+  timestamp         DateTime @default(now())
+  reportJson        String   // Diagnóstico completo en JSON
+  status            String   // OK, WARNING, ERROR
+  schemaVersion     String
+  summary           String?  // Resumen breve (JSON)
+
+  @@map("system_doctor_logs")
+}
+
 /// @module directiva
 model Comite {
   id             String   @id @default(cuid())

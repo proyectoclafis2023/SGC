@@ -6,10 +6,13 @@ const registry = require('../../core/mapping/registry');
 const mappingEngine = require('../../core/mapping/engine');
 const { generateDatasetHash } = require('../../utils/hashDataset');
 const { normalizeString } = require('../../utils/stringSimilarity');
+const XLSX = require('xlsx');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const MAX_ROWS_LIMIT = parseInt(process.env.MASS_UPLOAD_MAX_ROWS) || 1000;
+
+const { MASTER_MODULES } = require('../../config/masterModules');
 
 class MassUploadService {
   /**
@@ -292,6 +295,76 @@ class MassUploadService {
       console.error('[DATABASE_TRANSACTION_ERROR]', error);
       throw new Error(`Carga masiva abortada: ${error.message}.`);
     }
+  }
+
+  /**
+   * Exports a single module to an Excel buffer.
+   * Uses registry to map field names to human-readable columns.
+   */
+  async exportModule(moduleKey) {
+    if (!MASTER_MODULES.includes(moduleKey)) {
+        throw new Error(`[SECURITY] El módulo '${moduleKey}' no es un maestro exportable o está restringido.`);
+    }
+
+    const config = registry[moduleKey];
+    if (!config) throw new Error(`[EXPORT_ERROR] Módulo '${moduleKey}' no registrado.`);
+
+    const data = await prisma[config.model].findMany({
+        where: { isArchived: false }
+    });
+
+    const transformed = data.map(row => {
+        const excelRow = {};
+        config.fields.forEach(f => {
+            if (row[f.bd] !== undefined) {
+                excelRow[f.excel] = row[f.bd];
+            }
+        });
+        return excelRow;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(transformed);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, moduleKey.toUpperCase());
+
+    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  }
+
+  /**
+   * Exports all master/relevant modules into a single multi-sheet Excel.
+   */
+  async exportAll() {
+    const wb = XLSX.utils.book_new();
+
+    // Export in logical order (Infrastructure -> People -> Base)
+    // We sort according to common dependency logic
+    const sortedMasters = [...MASTER_MODULES].sort((a, b) => {
+        const order = {
+            'torres': 1, 'tipos_unidad': 2, 'unidades': 3, 'estacionamientos': 4, 'espacios': 5,
+            'propietarios': 6, 'residentes': 7, 'personal': 8,
+            'afps': 9, 'previsiones': 10, 'bancos': 11, 'articulos_personal': 12, 'maestro_categorias_articulos': 13, 'emergencias': 14
+        };
+        return (order[a] || 99) - (order[b] || 99);
+    });
+
+    for (const moduleKey of sortedMasters) {
+        const config = registry[moduleKey];
+        if (!config) continue;
+
+        const data = await prisma[config.model].findMany({ where: { isArchived: false } });
+        const transformed = data.map(row => {
+            const excelRow = {};
+            config.fields.forEach(f => {
+                if (row[f.bd] !== undefined) excelRow[f.excel] = row[f.bd];
+            });
+            return excelRow;
+        });
+
+        const ws = XLSX.utils.json_to_sheet(transformed);
+        XLSX.utils.book_append_sheet(wb, ws, moduleKey.toUpperCase());
+    }
+
+    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
   }
 
   getUniqueKey(moduleKey) {

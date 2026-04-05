@@ -87,6 +87,37 @@ class MassUploadController {
   }
 
   /**
+   * Endpoint for individual module export.
+   */
+  async exportIndividual(req, res) {
+    try {
+      const { module } = req.params;
+      const buffer = await MassUploadService.exportModule(module);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=export_${module}.xlsx`);
+      return res.end(buffer);
+    } catch (error) {
+      console.error("Error exporting individual module:", error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * Endpoint for consolidated multi-sheet export.
+   */
+  async exportAll(req, res) {
+    try {
+      const buffer = await MassUploadService.exportAll();
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=export_consolidado_sgc.xlsx`);
+      return res.end(buffer);
+    } catch (error) {
+      console.error("Error exporting consolidated data:", error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
    * Endpoint for fetching mass upload session logs.
    * @param {Object} req - The Express request object.
    * @param {Object} res - The Express response object.

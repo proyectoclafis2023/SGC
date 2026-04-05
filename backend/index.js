@@ -14,6 +14,7 @@ const rateLimit = require('express-rate-limit');
 const bulkMapping = require('./config/bulk-mapping');
 const bulkEngine = require('./core/bulk_engine');
 const massUploadController = require('./modules/mass_upload/massUpload.controller');
+const systemDoctorController = require('./modules/systemDoctor/systemDoctor.controller');
 
 const prisma = new PrismaClient();
 const app = express();
@@ -65,7 +66,7 @@ app.use('/api/', apiLimiter);
 
 const authenticate = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = (authHeader && authHeader.split(' ')[1]) || req.query.token;
 
     if (!token) return res.status(401).json({ error: 'Autenticación requerida' });
 
@@ -250,6 +251,10 @@ app.post('/api/mass_upload/execute', authorize('mass_upload:execute'), upload.si
 });
 
 app.get('/api/mass_upload/history', authorize('mass_upload:execute'), massUploadController.getLogs);
+app.get('/api/mass_upload/export/:module', authorize('mass_upload:execute'), massUploadController.exportIndividual);
+app.get('/api/mass_upload/export-all', authorize('mass_upload:execute'), massUploadController.exportAll);
+app.get('/api/system-doctor', authorize('mass_upload:execute'), (req, res) => systemDoctorController.diagnose(req, res));
+app.get('/api/system-doctor/history', authorize('mass_upload:execute'), (req, res) => systemDoctorController.getHistory(req, res));
 
 // --- Root Route for confirmation ---
 app.get('/', (req, res) => {

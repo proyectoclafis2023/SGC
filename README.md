@@ -35,49 +35,66 @@ chmod +x setup.sh
 
 El script configurará automáticamente las dependencias, generará secretos de seguridad y preparará la base de datos de manera autónoma.
 
+---
+
+## 🤖 AI ONBOARDING & CONTEXT
+
+Este sistema está diseñado para ser **AI-Native**. Si eres un asistente de IA (Antigravity, Cursor, etc.), debes seguir estas reglas innegociables:
+
+### 1. La Triple Alianza (Data Mapping)
+Cualquier entidad del sistema debe fluir a través de tres capas de representación:
+*   **EXCEL (Capa Humana)**: Columnas en español (ej: `Nombre de la Torre`).
+*   **API (Capa de Transporte)**: Naming en `snake_case` (ej: `nombre_torre`).
+*   **DB (Capa de Persistencia)**: Naming en `camelCase` (ej: `nombreTorre`).
+
+### 2. Fuente de Verdad (Single Source of Truth)
+*   **Mapping**: `backend/core/mapping/registry.js` define cómo se transforman los campos entre las tres capas. **PROHIBIDO** transformar datos manualmente en el frontend.
+*   **Maestros**: `backend/config/masterModules.js` define la lista canónica de módulos maestros habilitados para carga masiva y exportación.
+
+### 3. Archivos Clave para Onboarding
+1. `/docs/ai/sgc-core-context.md`: Contexto operativo unificado.
+2. `/docs/architecture/sgc-module-standard.md`: Estándar de nombres y soft-delete.
+3. `/backend/core/mapping/registry.js`: El cerebro del mapping.
+4. `/backend/config/masterModules.js`: Definición de alcance de datos.
+5. `/backend/modules/mass_upload/*`: Motor principal de persistencia.
+6. `/backend/modules/systemDoctor/*`: Motor de diagnóstico y salud.
+
+### 4. Prompt Base para Agentes
+> "Antes de realizar cambios, leer obligatoriamente:
+> - docs/ai/sgc-core-context.md
+> - docs/architecture/sgc-module-standard.md
+> 
+> Reglas: Usar registry.js como fuente de verdad, respetar MASTER_MODULES, no inferir estructura desde Prisma directamente y nunca romper el mapping centralizado."
 
 ---
 
-## 🧪 Scripts y Automatización
+## 🧪 SGC DOCTOR (Salud del Sistema)
 
-El sistema incluye una carpeta `/scripts/` con herramientas de validación continua:
+El sistema incluye un motor de diagnóstico avanzado accesible desde `/system-doctor` que valida:
+1. **Schema Alignment**: Sincronización entre Prisma y Registry.
+2. **Master Definition**: Consistencia de la lista canónica v3.1.
+3. **Dataset Health**: Deduplicación y hashes de carga masiva.
+4. **Execution Analytics**: Tendencias de errores y hotspots de conflicto.
+5. **System Version**: Validación de la versión cañónica `3.1.0`.
+
+---
+
+## 🧪 Otros Scripts y Automatización
 
 ### 1. RBAC Test Runner
 Simula el comportamiento de diferentes roles (Admin, Residente, Conserje, Propietario) para verificar la seguridad del backend.
-- **Ubicación**: `/scripts/testing/rbac-test-runner.js`
 - **Ejecución**: `npm run test:rbac` (desde backend)
-- **Logs**: Resultados detallados en `/logs/rbac-test.log`
+- **Logs**: `/logs/rbac-test.log`
 
-**Este script valida:**
-- Login exitoso por rol.
-- Acceso a módulos permitidos.
-- Bloqueo de accesos no autorizados (403 Forbidden).
-- Control de tasa de peticiones (Rate Limiting).
-
-### 2. SGC Doctor (Auditor de Consistencia)
-Herramienta de diagnóstico que valida la alineación canónica entre el Frontend, Backend y la Base de Datos.
+### 2. CLI Doctor (Legacy)
+Herramienta de diagnóstico CLI que valida la alineación canónica.
 - **Ubicación**: `/scripts/sgc-doctor.js`
-- **Ejecución**: `node scripts/sgc-doctor.js`
-- **Función**:
-    - Escanea los 49+ módulos del sistema.
-    - Verifica la existencia de rutas API y componentes UI.
-    - Valida el etiquetado `@module` en Prisma.
-    - Asegura que los módulos maestros tengan endpoints de `/upload`.
-    - Se utiliza como gatekeeper antes de realizar commits críticos.
-
----
-
-## 🐳 Docker
-
-```bash
-docker-compose up --build
-```
 
 ---
 
 ## 🔐 Credenciales de Prueba (Demo)
 
-- **Admin**: `gdcuentas@sgc.cl` / `admin123` (Configurable en `.env`)
+- **Admin**: `gdcuentas@sgc.cl` / `admin123`
 - **Residente**: `residente@sgc.cl` / `sgc123`
 - **Conserje**: `conserje@sgc.cl` / `sgc123`
 - **Frontend URL**: `http://localhost:5173`
@@ -85,69 +102,14 @@ docker-compose up --build
 
 ---
 
-## 📚 Documentación Técnica
-
-Para mantener la consistencia del sistema, consulte los manuales en `/docs/architecture` y `/docs/ai`:
-
-1. **AI Core Context**: [sgc-core-context.md](/docs/ai/sgc-core-context.md) (Fuente de verdad unificada).
-2. **Estándar de Módulos**: Rules in `sgc-module-standard.md` (Nombres, tipos, Soft Delete).
-3. **Mapping Engine**: Lógica de `registry.js` en `mapping-and-registry-rules.md`.
-4. **Módulo Canónico**: Ejemplo de referencia en `canonical-module-712.md`.
-5. **Automatización**: Guía detallada de pruebas en `automation.md`.
-
----
-
-## 🤖 AI / Workflow con Asistentes
-
-Este proyecto está optimizado para trabajar con **Antigravity** (Codificación Directa) y **ChatGPT** (Refinamiento de Prompts).
-
-### 🥇 Paso 1: Configurar ChatGPT como "Prompt Engineer"
-Copia y pega el siguiente prompt en una nueva sesión de ChatGPT para darle contexto total del proyecto:
-
-> **Rol**: Actúa como experto en Prompt Engineering para el sistema SGC. 
-> **Misión**: Redactar tareas técnicas y precisas para que Antigravity las ejecute sin romper la arquitectura.
->
-> **Reglas de Oro (Innegociables)**:
-> 1. **Triple Alianza**: API en `snake_case`, DB (Prisma) en `camelCase`, Excel en español.
-> 2. **Mapping**: NO transformaciones manuales en frontend. Todo en `registry.js` con `requestMapper`/`mapResponse`.
-> 3. **AI Context**: Siempre referenciar `/docs/ai/sgc-core-context.md` como fuente de verdad.
->
-> **Fuentes de Verdad**:
-> - `/docs/ai/sgc-core-context.md` (Contexto operativo unificado)
-> - `/docs/architecture/sgc-modules-full.txt` (Estructura de módulos)
->
-> **Instrucción**: Cada vez que te pida una tarea, genera un prompt para Antigravity que comience con: *"Basado en el estándar de /docs/architecture/ y /docs/ai/sgc-core-context.md, realiza lo siguiente..."*
-
-### 🥈 Paso 2: Trabajar con Antigravity
-Una vez que ChatGPT refine tu idea, dale el prompt resultante a Antigravity. Él se encargará de leer los archivos, proponer el código y ejecutarlo siguiendo las reglas del sistema.
-
----
-
 ## 📦 Changelog
 
-### v2.7.0 — Arquitectura Consolidada
-
-#### 🔧 Cambios Clave
-* **Estructura**: Unificación del conocimiento IA en `sgc-core-context.md` como fuente de verdad única.
-* **Mapping**: Refuerzo global del flujo `requestMapper/mapResponse` como regla obligatoria en todo el sistema.
-* **Setup**: Implementación de `setup.sh v2.0.0`, con validación de entorno (Node.js, puertos, OS), generación automática de secretos y reseteo determinístico de base de datos.
-* **Arquitectura**: Consolidación total de la `Triple Alianza` (Excel ↔ API ↔ BD).
-
-#### 🚀 Impacto
-* Sistema completamente reproducible en cualquier entorno.
-* Eliminación de ambigüedades arquitectónicas.
-* Base sólida para desarrollo asistido por IA.
-* Preparación completa para la implementación masiva de módulos operacionales.
-
-#### 🧠 Estado
-El sistema SGC se encuentra en un estado estable, seguro y determinístico, listo para la evolución modular progresiva.
-
----
-
-## 📚 Documentación Base
-- [Unificado Core Context](/docs/ai/sgc-core-context.md)
-- [Estándar de Módulos](/docs/architecture/sgc-module-standard.md)
-- [Reglas de Mapeo](/docs/architecture/mapping-and-registry-rules.md)
+### v3.1.0 — Data Platform & System Doctor
+* **System Doctor**: Implementación de módulo de diagnóstico global con UI dedicada.
+* **Canonical Masters**: Centralización de `MASTER_MODULES` en `/backend/config/`.
+* **AI Onboarding**: Re-estructuración del README y documentación para agentes de IA.
+* **Traceability**: Integración de snapshots de datos (`executedDataJson`) y hashing SHA-256 para auditoría forense.
+* **Exportación**: Restauración de exportación consolidada multi-hoja basada en el Registro Central.
 
 ---
 © 2026 SGC Project - Sistema de Gestión de Condominios.
