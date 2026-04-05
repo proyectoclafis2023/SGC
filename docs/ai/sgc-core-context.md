@@ -18,6 +18,16 @@ Este archivo constituye la **única fuente de verdad** para cualquier interacci�
 
 ---
 
+## 📐 Relación con el Estándar Técnico
+Este documento consolida y abstrae las reglas del sistema SGC para su uso por asistentes de IA. Las definiciones técnicas detalladas en `/docs/architecture/sgc-module-standard.md` (incluyendo estructura de módulos, contratos de API y convenciones de BD) se mantienen como la referencia formal del desarrollo.
+
+Este archivo **NO reemplaza** el estándar técnico, sino que lo sintetiza y lo hace operativo para la interacción con IA.
+
+> [!NOTE]
+> En caso de duda técnica específica o estructural, la fuente de verdad definitiva es [sgc-module-standard.md](/docs/architecture/sgc-module-standard.md).
+
+---
+
 ## 2. PRINCIPIOS DEL SISTEMA
 * **UI-First**: Todo campo visible en la interfaz de usuario DEBE existir en la base de datos.
 * **Backend-Driven**: La lógica de negocio y las validaciones residen exclusivamente en el servidor.
