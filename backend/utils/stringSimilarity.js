@@ -71,8 +71,26 @@ function findClosestMatch(value, candidates) {
   return minDistance <= threshold ? bestMatch : null;
 }
 
+/**
+ * Calculates a similarity ratio between 0 and 1.
+ * 1 = identical, 0 = completely different.
+ * @param {string} a - First string.
+ * @param {string} b - Second string.
+ * @returns {number} - Confidence level.
+ */
+function calculateSimilarityScore(a, b) {
+  const normalizedA = normalizeString(a);
+  const normalizedB = normalizeString(b);
+  if (normalizedA === normalizedB) return 1.0;
+  
+  const distance = levenshtein(normalizedA, normalizedB);
+  const maxLen = Math.max(normalizedA.length, normalizedB.length);
+  return (maxLen - distance) / maxLen;
+}
+
 module.exports = {
   normalizeString,
   levenshtein,
-  findClosestMatch
+  findClosestMatch,
+  calculateSimilarityScore
 };

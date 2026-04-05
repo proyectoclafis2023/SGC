@@ -19,7 +19,11 @@ class MassUploadController {
         });
       }
 
-      const summary = await MassUploadService.dryRun(req.file.buffer);
+      const options = {
+        autoFix: req.body.auto_fix === 'true' || req.query.auto_fix === 'true'
+      };
+
+      const summary = await MassUploadService.dryRun(req.file.buffer, options);
 
       return res.status(200).json({
         success: true,
@@ -53,6 +57,7 @@ class MassUploadController {
       const options = {
         strictMode: req.body.strict_mode === 'true' || req.query.strict_mode === 'true',
         skipDryRun: req.body.skip_dry_run === 'true' || req.query.skip_dry_run === 'true',
+        autoFix: req.body.auto_fix === 'true' || req.query.auto_fix === 'true',
         userId: req.user ? req.user.id : null
       };
 

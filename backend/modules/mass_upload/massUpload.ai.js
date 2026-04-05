@@ -1,15 +1,17 @@
-const { normalizeString, findClosestMatch } = require('../../utils/stringSimilarity');
+const { normalizeString, findClosestMatch, calculateSimilarityScore } = require('../../utils/stringSimilarity');
 
 class MassUploadAI {
   /**
-   * Main entry point for generating intelligent suggestions based on error context.
-   * Implements Phase 2 Heuristics: Normalization, Similarity and Contextual rules.
-   * @param {string} type - Error type ('email', 'fk', 'duplicate').
-   * @param {Object} context - Data required for the heuristic (value, model, field, prisma, candidates).
-   * @returns {Promise<string|null>} - Formatted suggestion.
+   * Threshold for safe autonomous corrections.
+   * If similarity score is above this, we can auto-fix the field.
+   */
+  AUTOCORRECT_THRESHOLD = 0.85;
+
+  /**
+   * Main entry point for intelligent suggestions.
    */
   async getSuggestion(type, context = {}) {
-    const { value, model, field, prisma, candidates } = context;
+    const { value, model, field, prisma } = context;
 
     switch (type) {
       case 'email':
@@ -17,27 +19,70 @@ class MassUploadAI {
         return fixedEmail ? `Quizás quiso decir: ${fixedEmail}` : "Revisar formato (ej: usuario@dominio.com)";
 
       case 'fk':
-        if (!value || !model || !field || !prisma) return "Verificar referencia en el maestro correspondiente.";
+        if (!value || !model || !field || !prisma) return "Verificar referencia.";
         return await this.suggestFK(value, model, field, prisma);
 
-      case 'duplicate':
-        return "Este registro parece duplicado. Considera unificarlo con el existente.";
-
       default:
-        return "Verificar coherencia de datos con el manual de carga.";
+        return "Verificar coherencia de datos.";
     }
   }
 
   /**
-   * Fixes common email typos using heuristic rules.
-   * @param {string} email - The input email.
-   * @returns {string|null} - Fixed email or null.
+   * NEW Phase 3 IA: Autonomous error correction.
+   * Logic for deciding if a value should be corrected without user intervention.
+   * @param {string} type - Error type ('email', 'fk').
+   * @param {Object} context - Data required for the correction logic.
+   * @returns {Promise<Object>} - { autoFixed: boolean, corrected: string, confidence: number }
+   */
+  async attemptAutoFix(type, context = {}) {
+    const { value, model, field, prisma } = context;
+    if (!value) return { autoFixed: false };
+
+    if (type === 'email') {
+        const fixed = this.fixEmail(value);
+        if (fixed) {
+            return { autoFixed: true, original: value, corrected: fixed, confidence: 1.0 };
+        }
+    }
+
+    if (type === 'fk' && model && field && prisma) {
+        try {
+            const records = await prisma[model].findMany({
+                select: { [field]: true },
+                take: 200
+            });
+            const names = [...new Set(records.map(r => r[field]).filter(Boolean))];
+            
+            let bestMatch = null;
+            let highestConfidence = 0;
+
+            for (const name of names) {
+                const conf = calculateSimilarityScore(value, name);
+                if (conf > highestConfidence) {
+                    highestConfidence = conf;
+                    bestMatch = name;
+                }
+            }
+
+            if (highestConfidence > this.AUTOCORRECT_THRESHOLD) {
+                return { autoFixed: true, original: value, corrected: bestMatch, confidence: highestConfidence };
+            }
+        } catch (e) {
+            return { autoFixed: false };
+        }
+    }
+
+    return { autoFixed: false };
+  }
+
+  /**
+   * Fixes common email typos.
    */
   fixEmail(email) {
     if (!email) return null;
     let fixed = String(email).trim().toLowerCase();
     
-    // Phase 2 Email Heuristics
+    // TYPOS: Rule-based (100% confidence)
     fixed = fixed.replace(/gmail\.con$/i, 'gmail.com');
     fixed = fixed.replace(/hotmail\.con$/i, 'hotmail.com');
     fixed = fixed.replace(/hotnail/i, 'hotmail');
@@ -49,15 +94,9 @@ class MassUploadAI {
 
   /**
    * Generates a fuzzy suggestion for an invalid foreign key lookup.
-   * @param {string} value - Misspelled value.
-   * @param {string} model - Prisma model name.
-   * @param {string} field - Field name to compare against.
-   * @param {object} prisma - PrismaClient instance.
-   * @returns {Promise<string|null>} - Formatted suggestion or null.
    */
   async suggestFK(value, model, field, prisma) {
     try {
-      // Find potential candidates (names or common identifiers)
       const records = await prisma[model].findMany({
         select: { [field]: true },
         take: 200 

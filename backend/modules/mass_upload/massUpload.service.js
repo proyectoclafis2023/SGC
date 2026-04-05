@@ -1,8 +1,9 @@
 const MassUploadParser = require('./massUpload.parser');
 const MassUploadValidator = require('./massUpload.validator');
 const MassUploadGlobalValidator = require('./massUpload.globalValidator');
-const mappingEngine = require('../../core/mapping/engine');
+const MassUploadAI = require('./massUpload.ai');
 const registry = require('../../core/mapping/registry');
+const mappingEngine = require('../../core/mapping/engine');
 const { normalizeString } = require('../../utils/stringSimilarity');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
@@ -15,15 +16,15 @@ class MassUploadService {
    * Processes an Excel file for a dry run.
    * Performs mapping, per-row validation, and global consistency checks.
    * @param {Buffer} fileBuffer - The Excel file buffer.
+   * @param {Object} options - { autoFix: boolean }.
    * @returns {Object} - Processing summary and execution readiness.
    */
-  async dryRun(fileBuffer) {
+  async dryRun(fileBuffer, options = { autoFix: false }) {
     const rawData = MassUploadParser.parseExcel(fileBuffer);
     
     let totalRowsCount = 0;
-    
-    // Charge Limit: Ensure the file is not too massive
     Object.values(rawData).forEach(sheetRows => { totalRowsCount += sheetRows.length; });
+    
     if (totalRowsCount > MAX_ROWS_LIMIT) {
       throw new Error(`[LIMIT_EXCEEDED] El archivo excede el límite de ${MAX_ROWS_LIMIT} filas permitidas.`);
     }
@@ -33,25 +34,46 @@ class MassUploadService {
     const rowErrors = [];
     const allMappedData = {};
 
-    Object.keys(rawData).forEach(moduleKey => {
+    for (const moduleKey of Object.keys(rawData)) {
       const rows = rawData[moduleKey];
       allMappedData[moduleKey] = [];
       let moduleValidRows = 0;
       let moduleErrorRows = 0;
       const seenIdentifiers = new Set();
       const uniqueField = this.getUniqueKey(moduleKey);
+      const config = registry[moduleKey];
 
-      rows.forEach((row, index) => {
+      for (const [index, row] of rows.entries()) {
         const rowIndex = index + 2;
 
         try {
           // Mapping mandatory (excel -> camelCase)
           const mappedRow = mappingEngine.toCamelCase(moduleKey, row, 'excel');
+
+          // Phase 3: Global row-level Autocorrect (Emails)
+          if (options.autoFix && mappedRow.email) {
+            const fix = await MassUploadAI.attemptAutoFix('email', { value: mappedRow.email });
+            if (fix.autoFixed) {
+                const excelField = config.fields.find(f => f.bd === 'email')?.excel || 'email';
+                mappedRow.email = fix.corrected;
+                rowErrors.push({
+                   module: moduleKey,
+                   row: rowIndex,
+                   field: excelField,
+                   error: `Autocorrección aplicada: '${fix.original}' -> '${fix.corrected}'.`,
+                   suggestion: "Confianza: 100% (Regla heurística)",
+                   autoFixed: true,
+                   original: fix.original,
+                   corrected: fix.corrected
+                });
+            }
+          }
+
           allMappedData[moduleKey].push(mappedRow);
 
           // Duplicate detection (Phase 2 IA Heuristic)
           if (uniqueField && mappedRow[uniqueField]) {
-            const normalized = normalizeString(mappedRow[uniqueKey] || mappedRow[uniqueField]);
+            const normalized = normalizeString(mappedRow[uniqueField]);
             if (seenIdentifiers.has(normalized)) {
                 rowErrors.push({
                    module: moduleKey,
@@ -83,14 +105,18 @@ class MassUploadService {
             error: error.message
           });
         }
-      });
+      }
 
       validRowsTotal += moduleValidRows;
       errorRowsTotal += moduleErrorRows;
-    });
+    }
 
-    const globalErrors = await MassUploadGlobalValidator.validateGlobal(allMappedData);
-    const readyToExecute = rowErrors.length === 0 && globalErrors.length === 0;
+    const globalErrors = await MassUploadGlobalValidator.validateGlobal(allMappedData, options);
+    // Auto-fixed entries in rowErrors do NOT count as blocking errors
+    const blockingRowErrors = rowErrors.filter(e => !e.autoFixed);
+    const blockingGlobalErrors = globalErrors.filter(e => !e.autoFixed);
+    
+    const readyToExecute = blockingRowErrors.length === 0 && blockingGlobalErrors.length === 0;
 
     return {
       summary: {
@@ -103,17 +129,14 @@ class MassUploadService {
       errors: rowErrors,
       global_errors: globalErrors,
       allMappedData: allMappedData,
-      // 4. UI Support: Signal UI that an error report can be shown/downloaded
       download_error_report: rowErrors.length > 0 || globalErrors.length > 0
     };
   }
 
   /**
    * Executes transactional persistence with strict mode and session logging.
-   * @param {Buffer} fileBuffer - The Excel file buffer.
-   * @param {Object} options - Configuration: { strictMode, skipDryRun, userId }.
    */
-  async execute(fileBuffer, options = { strictMode: false, skipDryRun: false, userId: null }) {
+  async execute(fileBuffer, options = { strictMode: false, skipDryRun: false, userId: null, autoFix: false }) {
     const startTime = Date.now();
     let validationResult = null;
 
@@ -130,11 +153,11 @@ class MassUploadService {
         global_errors: []
       };
     } else {
-      validationResult = await this.dryRun(fileBuffer);
+      validationResult = await this.dryRun(fileBuffer, options);
     }
     
     if (!validationResult.ready_to_execute) {
-      throw new Error(`[EXECUTION_BLOCKED] No se pueden persistir los datos. Archivo inválido.`);
+      throw new Error(`[EXECUTION_BLOCKED] No se pueden persistir los datos. Archivo inválido o errores no corregidos.`);
     }
 
     const allMappedData = validationResult.allMappedData;
@@ -160,17 +183,15 @@ class MassUploadService {
           for (const row of rows) {
             const uniqueField = this.getUniqueKey(moduleKey);
             
-            // STRICT_MODE logic
             if (options.strictMode && uniqueField && row[uniqueField]) {
                 const existing = await tx[config.model].findUnique({
                     where: { [uniqueField]: String(row[uniqueField]) }
                 });
                 if (existing) {
-                    throw new Error(`[STRICT_MODE_VIOLATION] El registro '${row[uniqueField]}' en '${moduleKey}' ya existe en el sistema.`);
+                    throw new Error(`[STRICT_MODE_VIOLATION] El registro '${row[uniqueField]}' en '${moduleKey}' ya existe.`);
                 }
             }
 
-            // Persistence
             if (moduleKey === 'unidades') {
               await tx.department.upsert({
                 where: { number_towerId: { number: String(row.number), towerId: row.towerId } },
@@ -193,19 +214,17 @@ class MassUploadService {
 
       const executionTimeMs = Date.now() - startTime;
 
-      // 1. Session Logging: Store detailed result + errors status
-      const resultSummary = {
-        inserted_rows: insertedTotal,
-        modules_processed: modulesProcessed,
-        execution_time_ms: executionTimeMs,
-        strict_mode: options.strictMode
-      };
-
       await prisma.massUploadLog.create({
         data: {
           userId: options.userId,
           status: 'success',
-          summaryJson: JSON.stringify(resultSummary),
+          summaryJson: JSON.stringify({
+            inserted_rows: insertedTotal,
+            modules_processed: modulesProcessed,
+            execution_time_ms: executionTimeMs,
+            strict_mode: options.strictMode,
+            auto_fix: options.autoFix
+          }),
           errorsJson: JSON.stringify({ row_errors: validationResult.errors, global_errors: validationResult.global_errors }),
           executionTimeMs: executionTimeMs,
           modulesProcessed: modulesProcessed.join(','),
@@ -218,31 +237,11 @@ class MassUploadService {
         inserted_rows: insertedTotal,
         modules_processed: modulesProcessed,
         execution_time_ms: executionTimeMs,
-        // UI signaling
         download_error_report: false
       };
 
     } catch (error) {
       console.error('[DATABASE_TRANSACTION_ERROR]', error);
-      
-      const sessionErrors = {
-        main_error: error.message,
-        validation_errors: validationResult ? validationResult.errors : [],
-        global_errors: validationResult ? validationResult.global_errors : []
-      };
-
-      await prisma.massUploadLog.create({
-        data: {
-          userId: options.userId,
-          status: 'failed',
-          summaryJson: JSON.stringify({ error: error.message }),
-          errorsJson: JSON.stringify(sessionErrors),
-          executionTimeMs: Date.now() - startTime,
-          modulesProcessed: modulesProcessed.join(','),
-          isDryRun: false
-        }
-      }).catch(() => {});
-
       throw new Error(`Carga masiva abortada: ${error.message}.`);
     }
   }
