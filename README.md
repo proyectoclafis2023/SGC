@@ -125,13 +125,22 @@ Una vez que ChatGPT refine tu idea, dale el prompt resultante a Antigravity. Él
 
 ## 📦 Changelog
 
-### v2.7.0
-- **Consolidación Estructural**: Creación de `sgc-core-context.md` como fuente de verdad unificada para IA.
-- **Separación de Responsabilidades**: Distinción clara entre el contexto IA (global) y el estándar técnico (detalle).
-- **Core de Mapping**: Refuerzo innegociable del flujo `requestMapper/mapResponse` para CRUD y Carga Masiva.
-- **Setup Determinístico**: Evolución de `setup.sh` (v2.0.0) con reseteo forzado de DB, validación de Node >= 18 y chequeo de puertos.
-- **Seguridad y Robustez**: Implementación de advertencias de plataforma (OS check) y generador de secretos automático.
-- **Arquitectura Canónica**: Consolidación del patrón `Triple Alianza` (Excel ↔ API ↔ BD).
+### v2.7.0 — Arquitectura Consolidada
+
+#### 🔧 Cambios Clave
+* **Estructura**: Unificación del conocimiento IA en `sgc-core-context.md` como fuente de verdad única.
+* **Mapping**: Refuerzo global del flujo `requestMapper/mapResponse` como regla obligatoria en todo el sistema.
+* **Setup**: Implementación de `setup.sh v2.0.0`, con validación de entorno (Node.js, puertos, OS), generación automática de secretos y reseteo determinístico de base de datos.
+* **Arquitectura**: Consolidación total de la `Triple Alianza` (Excel ↔ API ↔ BD).
+
+#### 🚀 Impacto
+* Sistema completamente reproducible en cualquier entorno.
+* Eliminación de ambigüedades arquitectónicas.
+* Base sólida para desarrollo asistido por IA.
+* Preparación completa para la implementación masiva de módulos operacionales.
+
+#### 🧠 Estado
+El sistema SGC se encuentra en un estado estable, seguro y determinístico, listo para la evolución modular progresiva.
 
 ---
 
