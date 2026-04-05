@@ -33,7 +33,7 @@ class MassUploadController {
 
   /**
    * Endpoint for actual execution of mass upload.
-   * Only persists data if dry run is 100% successful.
+   * Hardened with strict_mode, skip_dry_run, and persistent logging.
    * @param {Object} req - The Express request object.
    * @param {Object} res - The Express response object.
    */
@@ -46,9 +46,19 @@ class MassUploadController {
         });
       }
 
-      const result = await MassUploadService.execute(req.file.buffer);
+      // Configuration options passed via body (multipart form-data)
+      const options = {
+        strictMode: req.body.strict_mode === 'true' || req.query.strict_mode === 'true',
+        skipDryRun: req.body.skip_dry_run === 'true' || req.query.skip_dry_run === 'true',
+        userId: req.user ? req.user.id : null
+      };
 
-      return res.status(200).json(result);
+      const result = await MassUploadService.execute(req.file.buffer, options);
+
+      return res.status(200).json({
+        success: true,
+        ...result
+      });
     } catch (error) {
       console.error("Error in mass upload execute:", error);
       return res.status(500).json({

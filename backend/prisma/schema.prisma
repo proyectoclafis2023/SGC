@@ -643,6 +643,19 @@ model BulkUploadLog {
   createdAt  DateTime @default(now())
 }
 
+model MassUploadLog {
+  id               String   @id @default(cuid())
+  userId           String?
+  timestamp        DateTime @default(now())
+  summaryJson      String   // Resumen detallado en JSON
+  status           String   // success, failed, warning
+  executionTimeMs  Int
+  modulesProcessed String   // Lista de módulos procesados
+  isDryRun         Boolean  @default(false)
+
+  @@map("mass_upload_logs")
+}
+
 /// @module directiva
 model Comite {
   id             String   @id @default(cuid())
