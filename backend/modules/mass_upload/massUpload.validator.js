@@ -1,12 +1,14 @@
 const registry = require('../../core/mapping/registry');
+const MassUploadAI = require('./massUpload.ai');
 
 class MassUploadValidator {
   /**
    * Validates a mapped row against the registry rules and basic types.
+   * Enhanced with Phase 2 IA Heuristics for suggestions.
    * @param {string} module - The entity key in registry.
    * @param {Object} row - The mapped row (camelCase).
    * @param {number} rowIndex - The row index for logging.
-   * @returns {Array} - Array of error objects.
+   * @returns {Array} - Array of error objects with intelligent suggestions.
    */
   static validateRow(module, row, rowIndex) {
     const config = registry[module];
@@ -39,8 +41,23 @@ class MassUploadValidator {
           module,
           row: rowIndex,
           field: field.excel,
-          error: `El campo '${field.excel}' no puede estar vacío.`
+          error: `El campo '${field.excel}' no puede estar vacío.`,
+          suggestion: `Completar dato obligatorio para '${module}'.`
         });
+      }
+
+      // Email Fix Heuristic
+      if (field.bd === 'email' && value) {
+        const emailFix = MassUploadAI.fixEmail(value);
+        if (emailFix) {
+          errors.push({
+            module,
+            row: rowIndex,
+            field: field.excel,
+            error: `Formato de correo sospechoso: '${value}'.`,
+            suggestion: `Quizás quiso decir: ${emailFix}`
+          });
+        }
       }
 
       // 2. Tipos básicos (Placeholder)
@@ -51,7 +68,8 @@ class MassUploadValidator {
               module,
               row: rowIndex,
               field: field.excel,
-              error: `El campo '${field.excel}' debe ser un número.`
+              error: `El campo '${field.excel}' debe ser un número.`,
+              suggestion: "Verificar decimales (usar punto para evitar ambigüedades)."
             });
           }
         }

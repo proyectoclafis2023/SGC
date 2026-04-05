@@ -3,6 +3,7 @@ const MassUploadValidator = require('./massUpload.validator');
 const MassUploadGlobalValidator = require('./massUpload.globalValidator');
 const mappingEngine = require('../../core/mapping/engine');
 const registry = require('../../core/mapping/registry');
+const { normalizeString } = require('../../utils/stringSimilarity');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -37,6 +38,8 @@ class MassUploadService {
       allMappedData[moduleKey] = [];
       let moduleValidRows = 0;
       let moduleErrorRows = 0;
+      const seenIdentifiers = new Set();
+      const uniqueField = this.getUniqueKey(moduleKey);
 
       rows.forEach((row, index) => {
         const rowIndex = index + 2;
@@ -45,6 +48,22 @@ class MassUploadService {
           // Mapping mandatory (excel -> camelCase)
           const mappedRow = mappingEngine.toCamelCase(moduleKey, row, 'excel');
           allMappedData[moduleKey].push(mappedRow);
+
+          // Duplicate detection (Phase 2 IA Heuristic)
+          if (uniqueField && mappedRow[uniqueField]) {
+            const normalized = normalizeString(mappedRow[uniqueKey] || mappedRow[uniqueField]);
+            if (seenIdentifiers.has(normalized)) {
+                rowErrors.push({
+                   module: moduleKey,
+                   row: rowIndex,
+                   field: uniqueField,
+                   error: `Dupicado inteligente detectado: '${mappedRow[uniqueField]}'.`,
+                   suggestion: "Este registro ya existe en el archivo actual. Sugerencia: Unificar datos o validar folio."
+                });
+                moduleErrorRows++;
+            }
+            seenIdentifiers.add(normalized);
+          }
           
           // Validate data per row
           const errors = MassUploadValidator.validateRow(moduleKey, mappedRow, rowIndex);

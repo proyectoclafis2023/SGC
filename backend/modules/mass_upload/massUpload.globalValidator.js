@@ -1,4 +1,5 @@
 const registry = require('../../core/mapping/registry');
+const MassUploadAI = require('./massUpload.ai');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -50,12 +51,25 @@ class MassUploadGlobalValidator {
             });
 
             if (!existsInDb) {
+              // IA Suggestion Phase
+              const suggestField = ['name', 'nombre', 'names', 'dni', 'folio'].find(f => 
+                  targetConfig.fields.some(cf => cf.bd === f)
+              ) || 'id';
+
+              const suggestion = await MassUploadAI.getSuggestion('fk', {
+                  value: targetId,
+                  model: targetConfig.model,
+                  field: suggestField,
+                  prisma: prisma
+              });
+
               globalErrors.push({
                 module,
                 row: displayRowIndex,
                 field: fieldConfig.excel,
                 error: `Referencia inexistente: '${targetId}' no encontrado en '${targetModule}' (Local o DB).`,
-                type: "relation"
+                type: "relation",
+                suggestion: suggestion
               });
             }
           } catch (error) {
