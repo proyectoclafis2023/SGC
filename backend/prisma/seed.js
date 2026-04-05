@@ -42,7 +42,8 @@ async function main() {
         { slug: 'infrastructure:manage', description: 'Maestra Infraestructura' },
         { slug: 'personnel:manage', description: 'Maestra Personal' },
         { slug: 'roles:manage', description: 'Gestión de Roles y Permisos' },
-        { slug: 'infrastructure:view', description: 'Permiso para visualizar infraestructura (torres/depts)' }
+        { slug: 'infrastructure:view', description: 'Permiso para visualizar infraestructura (torres/depts)' },
+        { slug: 'mass_upload:execute', description: 'Ejecutar procesos de carga masiva' }
     ];
 
     const permMap = {};

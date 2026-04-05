@@ -231,7 +231,7 @@ app.get('/api/bulk-masters', authorize('admin:stats'), (req, res) => {
 
 
 // --- 8.x.x Mass Upload Engine (Phase 1) ---
-app.post('/api/mass_upload/dry-run', authorize('admin:stats'), upload.single('file'), (req, res) => {
+app.post('/api/mass_upload/dry-run', authorize('mass_upload:execute'), upload.single('file'), (req, res) => {
     // If we use disk storage, we pass the file path or read it
     // The controller is currently expecting req.file.buffer, but for disk storage we'll read it
     if (req.file && !req.file.buffer) {
