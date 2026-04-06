@@ -592,6 +592,12 @@ const registry = {
             { api: 'arrears_fine_amount', bd: 'arrearsFineAmount', excel: 'monto_multa_morosidad' },
             { api: 'arrears_fine_percentage', bd: 'arrearsFinePercentage', excel: 'porcentaje_multa_morosidad' },
             { api: 'census_frequency_years', bd: 'censusFrequencyYears', excel: 'frecuencia_censo_anios' },
+            // System Doctor (v3.5.0+)
+            { api: 'doctor_alert_enabled', bd: 'doctorAlertEnabled', excel: 'doctor_alertas_activas' },
+            { api: 'doctor_threshold_warning', bd: 'doctorThresholdWarning', excel: 'doctor_umbral_advertencia' },
+            { api: 'doctor_threshold_error', bd: 'doctorThresholdError', excel: 'doctor_umbral_error' },
+            { api: 'doctor_cooldown_min', bd: 'doctorCooldownMin', excel: 'doctor_cooldown' },
+            { api: 'doctor_webhook_url', bd: 'doctorWebhookUrl', excel: 'doctor_webhook' },
             { api: 'created_at', bd: 'createdAt', excel: 'fecha_creacion' }
         ]
     },

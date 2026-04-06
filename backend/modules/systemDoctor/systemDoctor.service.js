@@ -3,15 +3,16 @@ const registry = require('../../core/mapping/registry');
 const { MASTER_MODULES, DATA_SCHEMA_VERSION, SGC_VERSION } = require('../../config/masterModules');
 const fs = require('fs');
 const path = require('path');
+const doctorAlert = require('./doctorAlert.service');
 const prisma = new PrismaClient();
 
 /**
- * SYSTEM DOCTOR SERVICE — ADVANCED v3.4.0
- * Health scoring, advanced grouping, and AI-ready event structure.
+ * SYSTEM DOCTOR SERVICE — ADVANCED v3.5.0
+ * Health scoring, advanced grouping, alert system and AI-ready event structure.
  */
 class SystemDoctorService {
     /**
-     * Performs a global system diagnosis with SGC v3.4 criteria.
+     * Performs a global system diagnosis with SGC v3.5 criteria.
      */
     async diagnose() {
         const checks = [
@@ -48,8 +49,9 @@ class SystemDoctorService {
             checks
         };
 
-        // Active Alerts & Events
-        const events = this.generateEvents(report);
+        // Active Alerts & Events (Trigger external notifications if necessary)
+        const channels = await doctorAlert.processAlerts(report);
+        const events = this.generateEvents(report, channels);
         report.events = events;
 
         // Persist to history (AI-Ready structured logs)
@@ -96,24 +98,72 @@ class SystemDoctorService {
     }
 
     /**
-     * EVENT SYSTEM (v3.4 — AI READY)
+     * RESOLVE DOCTOR CONFIG (v3.5.0)
+     * Priority: DB (SystemSettings) > ENV > hardcoded
      */
-    generateEvents(report) {
+    async getDoctorConfig() {
+        const db = await prisma.systemSettings.findFirst({ orderBy: { createdAt: 'desc' } });
+        
+        let config = {
+            enabled: db?.doctorAlertEnabled ?? (process.env.DOCTOR_ALERT_EMAIL_ENABLED === 'true' || !!process.env.DOCTOR_ALERT_WEBHOOK_URL),
+            threshold_warning: db?.doctorThresholdWarning ?? parseInt(process.env.DOCTOR_ALERT_THRESHOLD_WARNING || '90'),
+            threshold_error: db?.doctorThresholdError ?? parseInt(process.env.DOCTOR_ALERT_THRESHOLD_ERROR || '70'),
+            cooldown_min: db?.doctorCooldownMin ?? parseInt(process.env.DOCTOR_ALERT_COOLDOWN_MIN || '15'),
+            webhook_url: db?.doctorWebhookUrl ?? process.env.DOCTOR_ALERT_WEBHOOK_URL
+        };
+
+        // Fallback Seguro (v3.5.0 Hardening)
+        const defaults = { warning: 90, error: 70, cooldown: 15 };
+        
+        if (config.threshold_warning < 0 || config.threshold_warning > 100) {
+            console.warn(`[DOCTOR_CONFIG] Invalid Warning Threshold (${config.threshold_warning}). Using default: ${defaults.warning}`);
+            config.threshold_warning = defaults.warning;
+        }
+
+        if (config.threshold_error < 0 || config.threshold_error > 100) {
+            console.warn(`[DOCTOR_CONFIG] Invalid Error Threshold (${config.threshold_error}). Using default: ${defaults.error}`);
+            config.threshold_error = defaults.error;
+        }
+
+        if (config.threshold_error >= config.threshold_warning) {
+            console.warn(`[DOCTOR_CONFIG] Consistency Error (Error >= Warning). Resetting to defaults.`);
+            config.threshold_warning = defaults.warning;
+            config.threshold_error = defaults.error;
+        }
+
+        if (config.cooldown_min < 1) {
+            console.warn(`[DOCTOR_CONFIG] Invalid Cooldown (${config.cooldown_min}). Using default: ${defaults.cooldown}`);
+            config.cooldown_min = defaults.cooldown;
+        }
+
+        return config;
+    }
+
+    /**
+     * EVENT SYSTEM (v3.5 — AI READY)
+     * Detects health drops and records sent alerts.
+     */
+    async generateEvents(report, notifiedChannels = []) {
         const events = [];
-        if (report.health_score < 70) {
+        const config = await this.getDoctorConfig();
+        const { threshold_warning, threshold_error } = config;
+
+        if (report.health_score < threshold_error) {
             events.push({
                 type: "HEALTH_CRITICAL",
                 severity: "ERROR",
-                message: `Health score dropped to ${report.health_score}% (Critical)`,
-                timestamp: report.timestamp
+                message: `Puntaje de salud en nivel crítico: ${report.health_score}%`,
+                timestamp: report.timestamp,
+                alerts_sent: notifiedChannels
             });
             console.error(`🚨 [DOCTOR CRITICAL]: Health score is ${report.health_score}%`);
-        } else if (report.health_score < 90) {
+        } else if (report.health_score < threshold_warning) {
             events.push({
                 type: "HEALTH_DROP",
                 severity: "WARNING",
-                message: `Health score dropped below 90% (${report.health_score}%)`,
-                timestamp: report.timestamp
+                message: `Puntaje de salud bajo parámetros normales: ${report.health_score}%`,
+                timestamp: report.timestamp,
+                alerts_sent: notifiedChannels
             });
             console.warn(`⚠️ [DOCTOR WARNING]: Health score is ${report.health_score}%`);
         }

@@ -582,6 +582,14 @@ model SystemSettings {
   arrearsFineAmount     Float    @default(0)
   arrearsFinePercentage Float    @default(0)
   censusFrequencyYears  Int      @default(1)
+  
+  // System Doctor (v3.5.0+)
+  doctorAlertEnabled      Boolean  @default(true)
+  doctorThresholdWarning  Int      @default(90)
+  doctorThresholdError    Int      @default(70)
+  doctorCooldownMin       Int      @default(15)
+  doctorWebhookUrl        String?
+  
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }

@@ -1307,13 +1307,68 @@ app.post('/api/system_settings', authorize('admin:stats'), requestMapper('config
 
 app.put('/api/system_settings/:id', authorize('admin:stats'), requestMapper('configuracion'), async (req, res) => {
     try {
-        const { id, createdAt, ...updateData } = req.body;
+        const { id, createdAt, updatedAt, ...updateData } = req.body;
+        
+        // 1. Validaciones de Rangos y Consistencia (SGC Doctor v3.5.0 Hardening)
+        if (updateData.doctorThresholdWarning !== undefined || updateData.doctorThresholdError !== undefined) {
+            const warning = updateData.doctorThresholdWarning ?? 90;
+            const error = updateData.doctorThresholdError ?? 70;
+            
+            if (warning < 0 || warning > 100 || error < 0 || error > 100) {
+                return res.status(400).json({ error: 'Los umbrales deben estar entre 0 y 100.' });
+            }
+            if (error >= warning) {
+                return res.status(400).json({ error: 'El umbral crítico de error debe ser menor al de advertencia.' });
+            }
+        }
+
+        if (updateData.doctorCooldownMin !== undefined && updateData.doctorCooldownMin < 1) {
+            return res.status(400).json({ error: 'El intervalo de alertas (cooldown) debe ser de al menos 1 minuto.' });
+        }
+
+        // 2. Validación de Webhook (Seguridad)
+        if (updateData.doctorWebhookUrl) {
+            try {
+                const url = new URL(updateData.doctorWebhookUrl);
+                if (url.protocol !== 'https:') {
+                    return res.status(400).json({ error: 'Por seguridad, el Webhook URL debe usar HTTPS.' });
+                }
+            } catch (e) {
+                return res.status(400).json({ error: 'URL de Webhook inválida.' });
+            }
+        }
+
+        // 3. Auditoría: Obtener valores anteriores
+        const oldData = await prisma.systemSettings.findUnique({ where: { id: req.params.id } });
+        
         const data = await prisma.systemSettings.update({
             where: { id: req.params.id },
             data: updateData
         });
+
+        // Registrar auditoría con detalle de cambios
+        const changes = {};
+        Object.keys(updateData).forEach(key => {
+            if (oldData[key] !== updateData[key]) {
+                changes[key] = { from: oldData[key], to: updateData[key] };
+            }
+        });
+
+        if (Object.keys(changes).length > 0) {
+            await audit(req, 'UPDATE_SETTINGS', 'SystemSettings', { changes });
+        }
+
         res.json(mapResponse('configuracion', data));
     } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// Endpoint para obtener la configuración actual del Doctor (v3.5.0)
+app.get('/api/system-doctor/config', authorize('admin:stats'), async (req, res) => {
+    try {
+        const { getDoctorConfig } = require('./modules/systemDoctor/systemDoctor.service');
+        const config = await getDoctorConfig();
+        res.json(config);
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // --- Health Providers (Previsiones / Salud) - PUT & DELETE missing ---

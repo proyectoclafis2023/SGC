@@ -214,10 +214,15 @@ function App() {
                                                                                             <Route path="reglas-gastos-comunes" element={<ReglasGastosComunesPage />} />
                                                                                             <Route path="maestro-fondos" element={<MaestroFondosPage />} />
                                                                                             <Route path="activo-fijo" element={<PrivateRoute permission="assets:manage"><ActivoFijoPage /></PrivateRoute>} />
-                                                                                            <Route path="carga-masiva" element={<CargaMasivaPage />} />
-                                                                                            <Route path="mass-upload" element={<PrivateRoute permission="mass_upload:execute"><MassUploadPage /></PrivateRoute>} />
-                                                                                            <Route path="mass-upload/history" element={<PrivateRoute permission="mass_upload:execute"><MassUploadHistoryPage /></PrivateRoute>} />
-                                                                                            <Route path="system-doctor" element={<PrivateRoute permission="mass_upload:execute"><SystemDoctorPage /></PrivateRoute>} />
+                                                                                            <Route path="carga-masiva-legacy" element={<CargaMasivaPage />} />
+                                                                                            <Route path="carga-masiva" element={<PrivateRoute permission="mass_upload:execute"><MassUploadPage /></PrivateRoute>} />
+                                                                                            <Route path="carga-masiva/historial" element={<PrivateRoute permission="mass_upload:execute"><MassUploadHistoryPage /></PrivateRoute>} />
+                                                                                            <Route path="salud-sistema" element={<PrivateRoute permission="mass_upload:execute"><SystemDoctorPage /></PrivateRoute>} />
+                                                                                            
+                                                                                            {/* Redirecciones de Compatibilidad (Legacy) */}
+                                                                                            <Route path="mass-upload" element={<Navigate to="/carga-masiva" replace />} />
+                                                                                            <Route path="mass-upload/history" element={<Navigate to="/carga-masiva/historial" replace />} />
+                                                                                            <Route path="system-doctor" element={<Navigate to="/salud-sistema" replace />} />
                                                                                             <Route path="reclamos" element={<ReclamosPage />} />
                                                                                             <Route path="directiva" element={<DirectivaPage />} />
                                                                                             <Route path="tickets" element={<TicketsPage />} />

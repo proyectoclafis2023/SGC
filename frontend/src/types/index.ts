@@ -91,6 +91,13 @@ export interface SystemSettings {
     arrearsFineAmount?: number; // Monto de multa fija por mora
     arrearsFinePercentage?: number; // % de multa por mora (si aplica)
     censusFrequencyYears?: number; // Frecuencia de censo en años
+    
+    // System Doctor (v3.5.0+)
+    doctor_alert_enabled?: boolean;
+    doctor_threshold_warning?: number;
+    doctor_threshold_error?: number;
+    doctor_cooldown_min?: number;
+    doctor_webhook_url?: string;
 }
 
 export interface IPCProjection {

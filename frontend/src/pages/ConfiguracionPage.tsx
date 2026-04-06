@@ -42,6 +42,13 @@ export const ConfiguracionPage: React.FC = () => {
     const [maxArrearsMonths, setMaxArrearsMonths] = useState(settings.maxArrearsMonths || 3);
     const [arrearsFineAmount, setArrearsFineAmount] = useState(settings.arrearsFineAmount || 0);
 
+    // System Doctor Settings
+    const [doctor_alert_enabled, setDoctorAlertEnabled] = useState(settings.doctor_alert_enabled ?? true);
+    const [doctor_threshold_warning, setDoctorThresholdWarning] = useState(settings.doctor_threshold_warning ?? 90);
+    const [doctor_threshold_error, setDoctorThresholdError] = useState(settings.doctor_threshold_error ?? 70);
+    const [doctor_cooldown_min, setDoctorCooldownMin] = useState(settings.doctor_cooldown_min ?? 15);
+    const [doctor_webhook_url, setDoctorWebhookUrl] = useState(settings.doctor_webhook_url || '');
+
     const [isDarkMode, setIsDarkMode] = useState(settings.darkMode);
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState('');
@@ -86,30 +93,40 @@ export const ConfiguracionPage: React.FC = () => {
 
         await new Promise(resolve => setTimeout(resolve, 600));
 
-        updateSettings({
-            ...settings,
-            system_name: name,
-            systemIcon: icon.charAt(0).toUpperCase(),
-            systemLogo: logo,
-            systemFavicon: favicon,
-            admin_name,
-            adminRut,
-            condo_rut,
-            condo_address,
-            adminPhone,
-            adminSignature: signature,
-            cameraBackupDays: Number(cameraBackupDays),
-            vacationAccrualRate: Number(vacationAccrualRate),
-            paymentDeadlineDay: Number(paymentDeadlineDay),
-            maxArrearsMonths: Number(maxArrearsMonths),
-            arrearsFineAmount: Number(arrearsFineAmount),
-            deletionPassword,
-            darkMode: isDarkMode
-        });
+        try {
+            await updateSettings({
+                ...settings,
+                system_name: name,
+                systemIcon: icon.charAt(0).toUpperCase(),
+                systemLogo: logo,
+                systemFavicon: favicon,
+                admin_name,
+                adminRut,
+                condo_rut,
+                condo_address,
+                adminPhone,
+                adminSignature: signature,
+                cameraBackupDays: Number(cameraBackupDays),
+                vacationAccrualRate: Number(vacationAccrualRate),
+                paymentDeadlineDay: Number(paymentDeadlineDay),
+                maxArrearsMonths: Number(maxArrearsMonths),
+                arrearsFineAmount: Number(arrearsFineAmount),
+                doctor_alert_enabled,
+                doctor_threshold_warning: Number(doctor_threshold_warning),
+                doctor_threshold_error: Number(doctor_threshold_error),
+                doctor_cooldown_min: Number(doctor_cooldown_min),
+                doctor_webhook_url,
+                deletionPassword,
+                darkMode: isDarkMode
+            });
 
-        setIsSaving(false);
-        setMessage('¡Configuración actualizada con éxito!');
-        setTimeout(() => setMessage(''), 3000);
+            setMessage('¡Configuración actualizada con éxito!');
+            setTimeout(() => setMessage(''), 3000);
+        } catch (error: any) {
+            setMessage(`❌ Error: ${error.message}`);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleReset = () => {
@@ -359,6 +376,64 @@ Esta acción borrará TODOS los datos maestros y operativos de la plataforma:
                                         placeholder="Ej: 5000"
                                     />
                                 </div>
+                            </div>
+
+                            {/* System Doctor Section (v3.5.0+) */}
+                            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <RefreshCw className="w-5 h-5 text-indigo-600" />
+                                        System Doctor & Salud Proactiva
+                                    </h3>
+                                    <div className="flex items-center space-x-3 bg-white dark:bg-gray-800 p-1.5 rounded-lg border border-gray-100 dark:border-gray-700 shadow-inner">
+                                        <span className="text-[10px] font-black text-gray-400 uppercase ml-2">Alertas Externas</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setDoctorAlertEnabled(!doctor_alert_enabled)}
+                                            className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none ${doctor_alert_enabled ? 'bg-green-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+                                        >
+                                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${doctor_alert_enabled ? 'translate-x-[22px]' : 'translate-x-1'}`} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                    <Input
+                                        label="Umbral Advertencia (%)"
+                                        type="number"
+                                        value={doctor_threshold_warning}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDoctorThresholdWarning(Number(e.target.value))}
+                                        min={1}
+                                        max={100}
+                                        placeholder="Ej: 90"
+                                    />
+                                    <Input
+                                        label="Umbral Crítico (%)"
+                                        type="number"
+                                        value={doctor_threshold_error}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDoctorThresholdError(Number(e.target.value))}
+                                        min={1}
+                                        max={100}
+                                        placeholder="Ej: 70"
+                                    />
+                                    <Input
+                                        label="Intervalo Alertas (Min)"
+                                        type="number"
+                                        value={doctor_cooldown_min}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDoctorCooldownMin(Number(e.target.value))}
+                                        min={1}
+                                        placeholder="Ej: 15"
+                                    />
+                                    <Input
+                                        label="Webhook URL"
+                                        value={doctor_webhook_url}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDoctorWebhookUrl(e.target.value)}
+                                        placeholder="https://hooks.slack.com/..."
+                                    />
+                                </div>
+                                <p className="mt-4 text-xs text-gray-500 dark:text-gray-400 italic">
+                                    * El sistema enviará notificaciones cuando el Health Score baje de los umbrales definidos. El intervalo evita saturación de mensajes.
+                                </p>
                             </div>
 
                             <div className="pt-6 flex items-center justify-end border-t border-gray-100 dark:border-gray-800">

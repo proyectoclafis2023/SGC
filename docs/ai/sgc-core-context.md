@@ -57,6 +57,20 @@ El sistema gestiona tres formatos de datos distintos que deben sincronizarse med
 
 ---
 
+## 🌐 Convención de Rutas UI
+El sistema SGC utiliza una separación semántica estricta entre el frontend y el backend:
+
+### 1. Idioma y Formato:
+* **Frontend (Rutas)**: Siempre en **español** y con palabras separadas por guiones (ej: `/salud-sistema`, `/carga-masiva`).
+* **Backend (API)**: Siempre en **inglés** y utilizando `snake_case` (ej: `/api/system-doctor`, `/api/mass-upload`).
+
+### 2. Consistencia y Compatibilidad:
+* Toda ruta nueva debe ser en español.
+* Al renombrar rutas, se deben mantener redirecciones (`Navigate replace`) para asegurar la compatibilidad con bookmarks previos.
+* Los nombres de las rutas deben ser descriptivos del módulo (ej: `/personal` en lugar de `/employees`).
+
+---
+
 ## 5. MOTOR DE MAPPING (CRÍTICO)
 Todas las operaciones de datos DEBEN pasar por la capa de mapeo centralizada en `/core/mapping/registry.js`.
 

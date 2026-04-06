@@ -390,9 +390,9 @@ export const Layout: React.FC = () => {
                             label="Super Admin"
                             isCollapsed={isCollapsed}
                             children={[
-                                { label: 'Salud del Sistema (Doctor)', path: '/system-doctor', icon: Activity, permission: 'mass_upload:execute' },
-                                { label: 'Motor de Carga (Data)', path: '/mass-upload', icon: Package, permission: 'mass_upload:execute' },
-                                { label: 'Historial de Cargas', path: '/mass-upload/history', icon: History, permission: 'mass_upload:execute' },
+                                { label: 'Salud del Sistema (Doctor)', path: '/salud-sistema', icon: Activity, permission: 'mass_upload:execute' },
+                                { label: 'Motor de Carga (Data)', path: '/carga-masiva', icon: Package, permission: 'mass_upload:execute' },
+                                { label: 'Historial de Cargas', path: '/carga-masiva/historial', icon: History, permission: 'mass_upload:execute' },
                             ]}
                         />
                     )}

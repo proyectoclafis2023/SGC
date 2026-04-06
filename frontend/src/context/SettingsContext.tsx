@@ -84,6 +84,9 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
             if (response.ok) {
                 const updatedData = await response.json();
                 setSettings(prev => ({ ...prev, ...updatedData }));
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Error al guardar la configuración');
             }
         } catch (e) {
             console.error('Error saving settings:', e);
