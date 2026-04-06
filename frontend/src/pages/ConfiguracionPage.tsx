@@ -23,24 +23,39 @@ const TEMPLATES = [
 
 export const ConfiguracionPage: React.FC = () => {
     const { settings, updateSettings } = useSettings();
-    const [name, setName] = useState(settings.system_name);
-    const [icon, setIcon] = useState(settings.systemIcon);
-    const [logo, setLogo] = useState(settings.systemLogo || '');
-    const [favicon, setFavicon] = useState(settings.systemFavicon || '');
+    const [system_name, setSystemName] = useState(settings.system_name || '');
+    const [system_icon, setSystemIcon] = useState(settings.system_icon || '');
+    const [logo, setLogo] = useState(settings.system_logo || '');
+    const [favicon, setFavicon] = useState(settings.system_favicon || '');
     const [admin_name, setAdminName] = useState(settings.admin_name || '');
-    const [adminRut, setAdminRut] = useState(settings.adminRut || '');
+    const [admin_rut, setAdminRut] = useState(settings.admin_rut || '');
     const [condo_rut, setCondoRut] = useState(settings.condo_rut || '');
     const [condo_address, setCondoAddress] = useState(settings.condo_address || '');
-    const [adminPhone, setAdminPhone] = useState(settings.adminPhone || '');
-    const [signature, setSignature] = useState(settings.adminSignature || '');
-    const [cameraBackupDays, setCameraBackupDays] = useState(settings.cameraBackupDays || 7);
-    const [vacationAccrualRate, setVacationAccrualRate] = useState(settings.vacationAccrualRate || 1.25);
-    const [deletionPassword, setDeletionPassword] = useState(settings.deletionPassword || '');
+    const [admin_phone, setAdminPhone] = useState(settings.admin_phone || '');
+    const [signature, setSignature] = useState(settings.admin_signature || '');
+    const [camera_backup_days, setCameraBackupDays] = useState(settings.camera_backup_days || 7);
+    const [vacation_accrual_rate, setVacationAccrualRate] = useState(settings.vacation_accrual_rate || 1.25);
+    // --- Password Management (v3.6.2) ---
+    const initialSmtpPassword = settings.smtp_password ? '********' : '';
+    const initialDeletionPassword = settings.deletion_password ? '********' : '';
+
+    const [smtp_password, setSmtpPassword] = useState(initialSmtpPassword);
+    const [deletion_password, setDeletionPassword] = useState(initialDeletionPassword);
     
     // Billing Settings
-    const [paymentDeadlineDay, setPaymentDeadlineDay] = useState(settings.paymentDeadlineDay || 5);
-    const [maxArrearsMonths, setMaxArrearsMonths] = useState(settings.maxArrearsMonths || 3);
-    const [arrearsFineAmount, setArrearsFineAmount] = useState(settings.arrearsFineAmount || 0);
+    const [payment_deadline_day, setPaymentDeadlineDay] = useState(settings.payment_deadline_day || 5);
+    const [max_arrears_months, setMaxArrearsMonths] = useState(settings.max_arrears_months || 3);
+    const [arrears_fine_amount, setArrearsFineAmount] = useState(settings.arrears_fine_amount || 0);
+    const [arrears_fine_percentage, setArrearsFinePercentage] = useState(settings.arrears_fine_percentage || 0);
+
+    // Maintenance & Others
+    const [census_frequency_years, setCensusFrequencyYears] = useState(settings.census_frequency_years || 5);
+
+    // Email (SMTP)
+    const [smtp_host, setSmtpHost] = useState(settings.smtp_host || '');
+    const [smtp_port, setSmtpPort] = useState(settings.smtp_port || 587);
+    const [smtp_user, setSmtpUser] = useState(settings.smtp_user || '');
+    const [smtp_from, setSmtpFrom] = useState(settings.smtp_from || '');
 
     // System Doctor Settings
     const [doctor_alert_enabled, setDoctorAlertEnabled] = useState(settings.doctor_alert_enabled ?? true);
@@ -49,7 +64,7 @@ export const ConfiguracionPage: React.FC = () => {
     const [doctor_cooldown_min, setDoctorCooldownMin] = useState(settings.doctor_cooldown_min ?? 15);
     const [doctor_webhook_url, setDoctorWebhookUrl] = useState(settings.doctor_webhook_url || '');
 
-    const [isDarkMode, setIsDarkMode] = useState(settings.darkMode);
+    const [isDarkMode, setIsDarkMode] = useState(settings.darkMode || false);
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState('');
 
@@ -86,6 +101,8 @@ export const ConfiguracionPage: React.FC = () => {
         }
     };
 
+    const normalize = (val: any) => val === null || val === undefined ? '' : String(val);
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
@@ -94,31 +111,46 @@ export const ConfiguracionPage: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 600));
 
         try {
-            await updateSettings({
+            const updateData: any = {
                 ...settings,
-                system_name: name,
-                systemIcon: icon.charAt(0).toUpperCase(),
-                systemLogo: logo,
-                systemFavicon: favicon,
+                system_name,
+                system_icon: system_icon.charAt(0).toUpperCase(),
+                system_logo: logo,
+                system_favicon: favicon,
                 admin_name,
-                adminRut,
+                admin_rut,
                 condo_rut,
                 condo_address,
-                adminPhone,
-                adminSignature: signature,
-                cameraBackupDays: Number(cameraBackupDays),
-                vacationAccrualRate: Number(vacationAccrualRate),
-                paymentDeadlineDay: Number(paymentDeadlineDay),
-                maxArrearsMonths: Number(maxArrearsMonths),
-                arrearsFineAmount: Number(arrearsFineAmount),
+                admin_phone,
+                admin_signature: signature,
+                camera_backup_days: Number(camera_backup_days),
+                vacation_accrual_rate: Number(vacation_accrual_rate),
+                payment_deadline_day: Number(payment_deadline_day),
+                max_arrears_months: Number(max_arrears_months),
+                arrears_fine_amount: Number(arrears_fine_amount),
+                arrears_fine_percentage: Number(arrears_fine_percentage),
+                census_frequency_years: Number(census_frequency_years),
+                smtp_host,
+                smtp_port: Number(smtp_port),
+                smtp_user,
+                smtp_from,
                 doctor_alert_enabled,
                 doctor_threshold_warning: Number(doctor_threshold_warning),
                 doctor_threshold_error: Number(doctor_threshold_error),
                 doctor_cooldown_min: Number(doctor_cooldown_min),
                 doctor_webhook_url,
-                deletionPassword,
                 darkMode: isDarkMode
-            });
+            };
+
+            // Solo enviar contraseñas si han sido explícitamente modificadas (detección real y normalizada)
+            if (normalize(smtp_password) !== normalize(initialSmtpPassword)) {
+                updateData.smtp_password = smtp_password;
+            }
+            if (normalize(deletion_password) !== normalize(initialDeletionPassword)) {
+                updateData.deletion_password = deletion_password;
+            }
+
+            await updateSettings(updateData);
 
             setMessage('¡Configuración actualizada con éxito!');
             setTimeout(() => setMessage(''), 3000);
@@ -180,17 +212,17 @@ Esta acción borrará TODOS los datos maestros y operativos de la plataforma:
 
                         <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 space-y-4 relative overflow-hidden group">
                             <div className="absolute inset-0 bg-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                            {logo ? (
-                                <img src={logo} alt="System Logo" className="h-16 w-auto object-contain drop-shadow-md" />
-                            ) : (
-                                <div className="w-16 h-16 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold text-3xl">
-                                    {icon?.charAt(0).toUpperCase() || '?'}
+                                {logo ? (
+                                    <img src={logo} alt="System Logo" className="h-16 w-auto object-contain drop-shadow-md" />
+                                ) : (
+                                    <div className="w-16 h-16 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold text-3xl">
+                                        {system_icon?.charAt(0).toUpperCase() || '?'}
+                                    </div>
+                                )}
+                                <div className="text-center z-10">
+                                    <p className="text-lg font-bold text-gray-900 dark:text-white truncate max-w-[200px]">{system_name || 'Nombre del Sistema'}</p>
+                                    <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-widest mt-1">Identidad Corporativa</p>
                                 </div>
-                            )}
-                            <div className="text-center z-10">
-                                <p className="text-lg font-bold text-gray-900 dark:text-white truncate max-w-[200px]">{name || 'Nombre del Sistema'}</p>
-                                <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-widest mt-1">Identidad Corporativa</p>
-                            </div>
                         </div>
 
                         <div className="flex items-start space-x-2 text-xs text-gray-500 dark:text-gray-400 bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100/50 dark:border-blue-800/50 text-left">
@@ -224,16 +256,16 @@ Esta acción borrará TODOS los datos maestros y operativos de la plataforma:
                                 <div className="md:col-span-2">
                                     <Input
                                         label="Nombre de la Comunidad"
-                                        value={name}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                                        value={system_name}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSystemName(e.target.value)}
                                         placeholder="ej. Condominio Las Camelias"
                                         required
                                     />
                                 </div>
                                 <Input
                                     label="Icono / Inicial"
-                                    value={icon}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setIcon(e.target.value.substring(0, 1).toUpperCase())}
+                                    value={system_icon}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSystemIcon(e.target.value.substring(0, 1).toUpperCase())}
                                     placeholder="Ej: G"
                                     maxLength={1}
                                     required
@@ -275,7 +307,7 @@ Esta acción borrará TODOS los datos maestros y operativos de la plataforma:
                                     />
                                     <Input
                                         label="RUT Administrador"
-                                        value={adminRut}
+                                        value={admin_rut}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAdminRut(formatRUT(e.target.value))}
                                         placeholder="12.345.678-9"
                                     />
@@ -293,14 +325,14 @@ Esta acción borrará TODOS los datos maestros y operativos de la plataforma:
                                     />
                                     <Input
                                         label="Teléfono Admin"
-                                        value={adminPhone}
+                                        value={admin_phone}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAdminPhone(e.target.value)}
                                         placeholder="+56 9 1234 5678"
                                     />
                                     <Input
                                         label="Días Respaldo Cámaras"
                                         type="number"
-                                        value={cameraBackupDays}
+                                        value={camera_backup_days}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCameraBackupDays(Number(e.target.value))}
                                         min={1}
                                         max={365}
@@ -309,7 +341,7 @@ Esta acción borrará TODOS los datos maestros y operativos de la plataforma:
                                         label="Días Vacaciones / Mes"
                                         type="number"
                                         step="0.01"
-                                        value={vacationAccrualRate}
+                                        value={vacation_accrual_rate}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVacationAccrualRate(Number(e.target.value))}
                                         min={0}
                                         max={10}
@@ -317,7 +349,7 @@ Esta acción borrará TODOS los datos maestros y operativos de la plataforma:
                                     <Input
                                         label="Clave de Eliminación Maestro"
                                         type="password"
-                                        value={deletionPassword}
+                                        value={deletion_password}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeletionPassword(e.target.value)}
                                         placeholder="Clave para borrados críticos"
                                     />
@@ -349,33 +381,96 @@ Esta acción borrará TODOS los datos maestros y operativos de la plataforma:
                                     Gestión de Cobranza y Mora
                                 </h3>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                     <Input
                                         label="Día Tope de Pago"
                                         type="number"
-                                        value={paymentDeadlineDay}
+                                        value={payment_deadline_day}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPaymentDeadlineDay(Number(e.target.value))}
                                         min={1}
                                         max={31}
                                         placeholder="Ej: 5"
                                     />
                                     <Input
-                                        label="Meses Máximos de Mora"
+                                        label="Meses Máximos Mora"
                                         type="number"
-                                        value={maxArrearsMonths}
+                                        value={max_arrears_months}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxArrearsMonths(Number(e.target.value))}
                                         min={1}
                                         placeholder="Ej: 3"
                                     />
                                     <Input
-                                        label="Monto Multa Fija ($)"
+                                        label="Multa Fija ($)"
                                         type="number"
-                                        value={arrearsFineAmount}
+                                        value={arrears_fine_amount}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setArrearsFineAmount(Number(e.target.value))}
                                         min={0}
                                         placeholder="Ej: 5000"
                                     />
+                                    <Input
+                                        label="Multa Porcentaje (%)"
+                                        type="number"
+                                        value={arrears_fine_percentage}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setArrearsFinePercentage(Number(e.target.value))}
+                                        min={0}
+                                        max={100}
+                                        placeholder="Ej: 5"
+                                    />
                                 </div>
+                            </div>
+
+                            {/* Email Section (SMTP v3.6) */}
+                            <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
+                                <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                                    <FileText className="w-5 h-5 text-indigo-600" />
+                                    Configuración de Correo (SMTP)
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    <Input
+                                        label="Host SMTP"
+                                        value={smtp_host}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSmtpHost(e.target.value)}
+                                        placeholder="mail.ejemplo.com"
+                                    />
+                                    <Input
+                                        label="Puerto SMTP"
+                                        type="number"
+                                        value={smtp_port}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSmtpPort(Number(e.target.value))}
+                                        placeholder="587"
+                                    />
+                                    <Input
+                                        label="Usuario SMTP"
+                                        value={smtp_user}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSmtpUser(e.target.value)}
+                                        placeholder="no-reply@ejemplo.com"
+                                    />
+                                    <Input
+                                        label="Contraseña SMTP"
+                                        type="password"
+                                        value={smtp_password}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSmtpPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                    />
+                                    <Input
+                                        label="Remitente (From)"
+                                        value={smtp_from}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSmtpFrom(e.target.value)}
+                                        placeholder="Nombre Condominio"
+                                    />
+                                    <Input
+                                        label="Frecuencia Censo (Años)"
+                                        type="number"
+                                        value={census_frequency_years}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCensusFrequencyYears(Number(e.target.value))}
+                                        min={1}
+                                        placeholder="Ej: 5"
+                                    />
+                                </div>
+                                <p className="mt-4 text-[10px] text-gray-400 dark:text-gray-500 italic">
+                                    * La configuración SMTP es necesaria para el envío de liquidaciones, avisos y alertas del System Doctor.
+                                </p>
                             </div>
 
                             {/* System Doctor Section (v3.5.0+) */}

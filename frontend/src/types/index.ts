@@ -54,30 +54,30 @@ export interface UserContextType {
 
 export interface SystemSettings {
     system_name: string;
-    systemIcon: string;
-    systemLogo?: string; // Base64 del logo personalizado
-    systemFavicon?: string; // Base64 del favicon personalizado
-    cameraBackupDays: number;
+    system_icon: string;
+    system_logo?: string; // Base64 del logo personalizado
+    system_favicon?: string; // Base64 del favicon personalizado
+    camera_backup_days: number;
     darkMode: boolean;
     theme?: 'light' | 'dark' | 'modern';
     // Datos del Administrador/Condominio
     admin_name?: string;
-    adminRut?: string;
+    admin_rut?: string;
     condo_rut?: string;
     condo_address?: string;
-    adminPhone?: string;
-    adminSignature?: string; // Base64 de la firma
-    deletionPassword?: string;
-    vacationAccrualRate?: number;
+    admin_phone?: string;
+    admin_signature?: string; // Base64 de la firma
+    deletion_password?: string;
+    vacation_accrual_rate?: number;
     // Email Config
-    smtpHost?: string;
-    smtpPort?: number;
-    smtpUser?: string;
-    smtpPassword?: string;
-    smtpFrom?: string;
-    smtpBcc?: string; // Correo en copia (registro)
-    conciergeEmail?: string; // Correo para recibir notificaciones de conserjería
-    emailTriggers?: {
+    smtp_host?: string;
+    smtp_port?: number;
+    smtp_user?: string;
+    smtp_password?: string;
+    smtp_from?: string;
+    smtp_bcc?: string; // Correo en copia (registro)
+    concierge_email?: string; // Correo para recibir notificaciones de conserjería
+    email_triggers?: {
         expenses?: boolean;
         visits?: boolean;
         correspondence?: boolean;
@@ -86,11 +86,11 @@ export interface SystemSettings {
         suggestions?: boolean;
     };
     // Gestión de Cobranza
-    paymentDeadlineDay?: number; // Día del mes límite de pago
-    maxArrearsMonths?: number; // Meses de mora máximos antes de alerta crítica
-    arrearsFineAmount?: number; // Monto de multa fija por mora
-    arrearsFinePercentage?: number; // % de multa por mora (si aplica)
-    censusFrequencyYears?: number; // Frecuencia de censo en años
+    payment_deadline_day?: number; // Día del mes límite de pago
+    max_arrears_months?: number; // Meses de mora máximos antes de alerta crítica
+    arrears_fine_amount?: number; // Monto de multa fija por mora
+    arrears_fine_percentage?: number; // % de multa por mora (si aplica)
+    census_frequency_years?: number; // Frecuencia de censo en años
     
     // System Doctor (v3.5.0+)
     doctor_alert_enabled?: boolean;

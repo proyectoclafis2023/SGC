@@ -1309,6 +1309,32 @@ app.post('/api/system_settings', authorize('admin:stats'), requestMapper('config
 app.put('/api/system_settings/:id', authorize('admin:stats'), requestMapper('configuracion'), async (req, res) => {
     try {
         const { id, createdAt, updatedAt, ...updateData } = req.body;
+
+        // --- Validaciones de Integridad (SGC v3.6 Alignment) ---
+        const validateRut = (rut) => {
+            if (!rut) return true;
+            const cleanRut = rut.toString().replace(/\./g, '').replace(/-/g, '').toUpperCase();
+            if (cleanRut.length < 2) return false;
+            const body = cleanRut.slice(0, -1);
+            const dv = cleanRut.slice(-1);
+            return /^[0-9]+$/.test(body) && /^[0-9K]$/.test(dv);
+        };
+
+        if (updateData.condoRut && !validateRut(updateData.condoRut)) {
+            return res.status(400).json({ error: 'Formato de RUT de Condominio inválido.' });
+        }
+        if (updateData.adminRut && !validateRut(updateData.adminRut)) {
+            return res.status(400).json({ error: 'Formato de RUT de Administrador inválido.' });
+        }
+        if (updateData.baseSalary !== undefined && updateData.baseSalary < 0) {
+            return res.status(400).json({ error: 'El sueldo base no puede ser negativo.' });
+        }
+        if (updateData.arrearsFineAmount !== undefined && updateData.arrearsFineAmount < 0) {
+            return res.status(400).json({ error: 'El monto de la multa no puede ser negativo.' });
+        }
+        if (updateData.arrearsFinePercentage !== undefined && (updateData.arrearsFinePercentage < 0 || updateData.arrearsFinePercentage > 100)) {
+            return res.status(400).json({ error: 'El porcentaje de multa debe estar entre 0 y 100.' });
+        }
         
         // 1. Validaciones de Rangos y Consistencia (SGC Doctor v3.5.0 Hardening)
         if (updateData.doctorThresholdWarning !== undefined || updateData.doctorThresholdError !== undefined) {
