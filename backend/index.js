@@ -98,13 +98,14 @@ const authenticate = async (req, res, next) => {
     }
 };
 
-// Audit Helper (Phase 2)
-const audit = async (req, action, entity, details = null) => {
+// Audit Helper (Phase 2 - Enterprise v3.6)
+const audit = async (req, action, entity, details = null, severity = 'LOW') => {
     try {
         await prisma.auditLog.create({
             data: {
                 userId: req.user?.id,
                 action,
+                severity,
                 entity,
                 endpoint: req.originalUrl,
                 method: req.method,
@@ -1348,18 +1349,56 @@ app.put('/api/system_settings/:id', authorize('admin:stats'), requestMapper('con
 
         // Registrar auditoría con detalle de cambios
         const changes = {};
+        let hasCriticalChange = false;
+        
         Object.keys(updateData).forEach(key => {
             if (oldData[key] !== updateData[key]) {
                 changes[key] = { from: oldData[key], to: updateData[key] };
+                if (['doctorWebhookUrl', 'doctorAlertEnabled', 'smtpPassword', 'deletionPassword'].includes(key)) {
+                    hasCriticalChange = true;
+                }
             }
         });
 
         if (Object.keys(changes).length > 0) {
-            await audit(req, 'UPDATE_SETTINGS', 'SystemSettings', { changes });
+            const action = hasCriticalChange ? 'CONFIG_CHANGE_CRITICAL' : 'UPDATE_SETTINGS';
+            const severity = hasCriticalChange ? 'HIGH' : 'LOW';
+            await audit(req, action, 'SystemSettings', { changes }, severity);
         }
 
         res.json(mapResponse('configuracion', data));
     } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// --- Enterprise Auditoría (Imputable & Inmutable v3.6) ---
+app.get('/api/audit-logs', authorize('admin:stats'), async (req, res) => {
+    try {
+        const data = await prisma.auditLog.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: 100
+        });
+        res.json(data);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Bloqueo explícito de borrado/edición de logs (Inmutabilidad)
+app.put('/api/audit-logs/:id', authorize('admin:stats'), (req, res) => res.status(405).json({ error: 'Audit logs are immutable' }));
+app.delete('/api/audit-logs/:id', authorize('admin:stats'), (req, res) => res.status(405).json({ error: 'Audit logs are immutable' }));
+
+// Global Config Export (v3.6)
+app.get('/api/system-settings/export', authorize('admin:stats'), async (req, res) => {
+    try {
+        const settings = await prisma.systemSettings.findFirst();
+        const exportData = {
+            metadata: {
+                exportedAt: new Date(),
+                version: "3.6.0",
+                source: "SGC Enterprise"
+            },
+            config: settings
+        };
+        res.json(exportData);
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Endpoint para obtener la configuración actual del Doctor (v3.5.0)

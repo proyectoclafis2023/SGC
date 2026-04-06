@@ -236,6 +236,7 @@ model AuditLog {
   id        String   @id @default(cuid())
   userId    String?
   action    String
+  severity  String   @default("LOW") // LOW | MEDIUM | HIGH
   entity    String?
   endpoint  String?
   method    String?

@@ -96,7 +96,7 @@ import { MaestroIPCPage } from './pages/MaestroIPCPage';
 import { IPCProjectionProvider } from './context/IPCProjectionContext';
 import { SolicitudInsumosPage } from './pages/SolicitudInsumosPage';
 import { MyPaymentsPage } from './pages/MyPaymentsPage';
-
+import { AuditLogPage } from './pages/AuditLogPage';
 import { CondoBoardProvider } from './context/CondoBoardContext';
 import { DirectivaPage } from './pages/DirectivaPage';
 import { MaestroCategoriasArticulosPage } from './pages/MaestroCategoriasArticulosPage';
@@ -209,6 +209,7 @@ function App() {
                                                               <Route path="solicitud-insumos" element={<PrivateRoute permission="supplies:manage"><SolicitudInsumosPage /></PrivateRoute>} />
                                                                                             <Route path="entregas-articulos" element={<EntregasArticulosPage />} />
                                                                                             <Route path="configuracion" element={<PrivateRoute permission="settings:manage"><ConfiguracionPage /></PrivateRoute>} />
+                                                                                            <Route path="configuracion/auditoria" element={<PrivateRoute permission="settings:manage"><AuditLogPage /></PrivateRoute>} />
                                                                                             <Route path="gastos-comunes" element={<PrivateRoute permission="finances:manage"><GastosComunesPage /></PrivateRoute>} />
                                                                                             <Route path="registro-gastos" element={<PrivateRoute permission="finances:manage"><RegistroGastosPage /></PrivateRoute>} />
                                                                                             <Route path="reglas-gastos-comunes" element={<ReglasGastosComunesPage />} />

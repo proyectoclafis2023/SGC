@@ -3,7 +3,7 @@ import { useSettings } from '../context/SettingsContext';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { formatRUT } from '../utils/formatters';
-import { Settings as SettingsIcon, Save, Info, Building2, AlertTriangle, RefreshCw, FileText, Download, CheckCircle2, CreditCard } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Info, Building2, AlertTriangle, RefreshCw, FileText, Download, CheckCircle2, CreditCard, Shield, History as HistoryIcon } from 'lucide-react';
 import { resetSystemData } from '../utils/dataManagement';
 
 const TEMPLATES = [
@@ -507,6 +507,54 @@ Esta acción borrará TODOS los datos maestros y operativos de la plataforma:
                                 No cambie las cabeceras de la primera fila. Para evitar errores, se recomienda llenar los datos de ejemplo y luego borrarlos.
                             </p>
                         </div>
+                    </div>
+                </div>
+            </div>
+            {/* Enterprise & Auditoría Section (v3.6) */}
+            <div className="bg-white dark:bg-gray-900 rounded-3xl border border-indigo-100 dark:border-indigo-900/30 overflow-hidden shadow-sm transition-all mt-8">
+                <div className="p-8 border-b border-indigo-50 dark:border-indigo-900/20 bg-indigo-50/10 dark:bg-indigo-900/5 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl">
+                            <Shield className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-tight">Enterprise & Auditoría</h3>
+                            <p className="text-xs font-bold text-indigo-600/60 dark:text-indigo-400/60">Monitoreo inmutable y exportación de configuración global.</p>
+                        </div>
+                    </div>
+                    <div className="flex gap-3">
+                        <a
+                            href="/configuracion/auditoria"
+                            className="px-6 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-300 hover:bg-gray-50 flex items-center gap-2 transition-all shadow-sm"
+                        >
+                            <HistoryIcon className="w-4 h-4 text-indigo-600" />
+                            Ver Auditoría de Sistema
+                        </a>
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                try {
+                                    const response = await fetch(`${import.meta.env.VITE_API_URL}/system-settings/export`, {
+                                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                                    });
+                                    if (response.ok) {
+                                        const data = await response.json();
+                                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `SGC_Config_Export_${new Date().toISOString().split('T')[0]}.json`;
+                                        a.click();
+                                    }
+                                } catch (e) {
+                                    console.error('Export failed:', e);
+                                }
+                            }}
+                            className="px-6 py-4 bg-indigo-600 text-white hover:bg-indigo-700 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2 group"
+                        >
+                            <Download className="w-4 h-4" />
+                            Exportar Configuración Global
+                        </button>
                     </div>
                 </div>
             </div>

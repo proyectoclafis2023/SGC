@@ -104,6 +104,28 @@ Herramienta de diagnóstico CLI que valida la alineación canónica.
 
 ## 📦 Changelog
 
+## v3.6.0 — Enterprise Hardening
+
+### 🔐 Auditoría Inmutable
+- AuditLog ahora es append-only
+- bloqueo de UPDATE/DELETE (405)
+
+### 🚨 Detección de Cambios Críticos
+- eventos CONFIG_CHANGE_CRITICAL
+- monitoreo de credenciales y webhooks
+
+### 🧾 UI de Auditoría
+- nueva ruta: /configuracion/auditoria
+- visualización con severidad
+
+### 📦 Exportación Global
+- endpoint /api/system-settings/export
+- descarga JSON con metadata
+
+### 🛡️ Seguridad y Hardening
+- validaciones reforzadas
+- consistencia de helpers
+
 ### v3.1.0 — Data Platform & System Doctor
 * **System Doctor**: Implementación de módulo de diagnóstico global con UI dedicada.
 * **Canonical Masters**: Centralización de `MASTER_MODULES` en `/backend/config/`.
